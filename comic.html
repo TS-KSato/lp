@@ -4,26 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- セキュリティ強化: Content Security Policy (インラインスクリプトを許可 - デモ用) -->
-    <!-- 本番環境では nonce または外部ファイル化を推奨 -->
+    <!-- セキュリティヘッダ -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://via.placeholder.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
-    <!-- クリックジャッキング対策 -->
+          content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://via.placeholder.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
     <meta http-equiv="X-Frame-Options" content="DENY">
-    <!-- MIME Sniffing対策 -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- Referrer Policy -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <!-- Permissions-Policy -->
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
-    <!-- DNS Prefetch Control -->
     <meta http-equiv="x-dns-prefetch-control" content="on">
-    <!-- クリティカルリソースのプリロード (最初の1ページのみ例として) -->
-    <link rel="preload" href="i_004.jpg?text=Page+1" as="image" fetchpriority="high">
-    <!-- アプリケーションの説明 -->
+
+    <!-- アプリ説明 -->
     <meta name="description" content="マンガアプリのプレビュー。最初の数ページを読んで、アプリをダウンロードしよう！">
     <meta name="theme-color" content="#4a6cf7">
+
     <title>マンガアプリ - プレビュー</title>
+
+    <!-- フォント最適化 -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <style>
         :root {
             --primary-color: #4a6cf7;
@@ -43,8 +41,16 @@
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #121212;
-                --text-color: #f1f1f1;
+                --text-color: #eaeaea; /* コントラスト強化 */
                 --overlay-background: rgba(0, 0, 0, 0.8);
+            }
+        }
+
+        /* prefers-reduced-motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
             }
         }
 
@@ -55,9 +61,10 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        html, body {
-             height: 100%;
-             overflow: hidden;
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
         }
 
         body {
@@ -75,7 +82,7 @@
             padding: 0 15px;
         }
 
-        /* ===== ヘッダー ===== */
+        /* ==== ヘッダー ==== */
         #header {
             background: var(--primary-color);
             color: var(--light-text);
@@ -98,7 +105,7 @@
             color: var(--light-text);
         }
 
-        /* ===== マンガビューワー ===== */
+        /* ==== ビューワー ==== */
         #manga-viewer {
             width: 100%;
             flex-grow: 1;
@@ -135,22 +142,23 @@
             max-height: 100%;
             object-fit: contain;
             display: block;
-            transition: opacity 0.3s ease, filter 0.3s ease; /* filter transition追加 */
+            transition: opacity 0.3s ease, filter 0.3s ease;
             pointer-events: none;
             opacity: 0;
         }
+
         .page-content.loaded {
             opacity: 1;
         }
+
         .page-content.loading {
-             opacity: 0.5;
+            opacity: 0.5;
         }
 
-        /* 4ページ目フィルター用クラス */
+        /* 4ページ目フィルター */
         .manga-page.page-filter-active .page-content.loaded {
-            filter: brightness(50%); /* 半透明の黒フィルター */
+            filter: brightness(50%);
         }
-
 
         /* ナビゲーションゾーン */
         .nav-zone {
@@ -162,9 +170,19 @@
             cursor: pointer;
         }
 
-        #prev-zone { left: 0; }
-        #next-zone { right: 0; }
-        #center-zone { left: 30%; width: 40%; cursor: default; }
+        #prev-zone {
+            left: 0;
+        }
+
+        #next-zone {
+            right: 0;
+        }
+
+        #center-zone {
+            left: 30%;
+            width: 40%;
+            cursor: default;
+        }
 
         /* UI オーバーレイ */
         .ui-overlay {
@@ -182,25 +200,28 @@
             opacity: 0;
             pointer-events: none;
         }
+
         #manga-viewer.show-ui .ui-overlay {
-             opacity: 1;
-             pointer-events: auto;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #top-overlay {
             top: 0;
             transform: translateY(-100%);
         }
+
         #bottom-overlay {
             bottom: 0;
             transform: translateY(100%);
         }
+
         #manga-viewer.show-ui #top-overlay,
         #manga-viewer.show-ui #bottom-overlay {
             transform: translateY(0);
         }
 
-        /* UIボタン共通スタイル */
+        /* UIボタン */
         .ui-button {
             background: none;
             border: none;
@@ -211,26 +232,28 @@
             align-items: center;
             justify-content: center;
         }
+
         .ui-button svg {
-             width: 22px;
-             height: 22px;
-             fill: currentColor;
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
         }
+
         .ui-button:hover {
-             opacity: 0.8;
+            opacity: 0.8;
         }
+
         .ui-button:disabled {
             opacity: 0.3;
             cursor: not-allowed;
         }
 
-        /* アクションボタン (中央配置) */
+        /* アクションボタン */
         .action-button {
             position: absolute;
-            /* bottom: 30px; */ /* 削除 */
-            top: 50%;      /* 追加 */
+            top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%); /* 修正 */
+            transform: translate(-50%, -50%);
             background-color: var(--primary-color);
             color: var(--light-text);
             padding: 12px 25px;
@@ -242,7 +265,7 @@
             cursor: pointer;
             font-size: 1.1rem;
             text-align: center;
-            z-index: 30; /* UIより手前、ページより手前 */
+            z-index: 30;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             opacity: 0;
             pointer-events: none;
@@ -256,11 +279,22 @@
         }
 
         @keyframes pulse {
-            /* translateも考慮に入れる */
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.05); }
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+            }
         }
 
+        .action-button:focus-visible {
+            outline: 2px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+
+        /* ローディングスピナー */
         #loading-spinner {
             position: absolute;
             top: 50%;
@@ -271,86 +305,98 @@
             border-top-color: var(--light-text);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            z-index: 50; /* 最前面 */
+            z-index: 50;
             display: none;
             transform: translate(-50%, -50%);
         }
+
         #loading-spinner.visible {
             display: block;
         }
 
         @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
         }
     </style>
-    <!-- 遅延CSSは不要 -->
-
 </head>
 
 <body>
-    <!-- ヘッダー (ロゴのみ) -->
+    <!-- ヘッダー -->
     <header id="header">
         <div class="container header-container">
             <a href="#" class="logo">マンガアプリ プレビュー</a>
         </div>
     </header>
 
-    <!-- マンガビューワーセクション -->
+    <!-- ビューワー -->
     <section id="manga-viewer">
-        <div id="manga-pages">
-            <!-- ページはJSで動的に生成されます -->
-        </div>
+        <div id="manga-pages"><!-- JSが生成 --></div>
 
-        <!-- ナビゲーションゾーン -->
+        <!-- ナビゲーション領域 -->
         <div class="nav-zone" id="prev-zone" aria-label="前のページへ"></div>
         <div class="nav-zone" id="center-zone" aria-label="UI表示切り替え"></div>
         <div class="nav-zone" id="next-zone" aria-label="次のページへ"></div>
 
-        <!-- 上部UI -->
+        <!-- UI：上 -->
         <div class="ui-overlay" id="top-overlay">
             <span id="manga-title">サンプルマンガ</span>
-            <span id="page-indicator">1 / 4</span>
+            <span id="page-indicator" aria-live="polite">1 / 4</span>
         </div>
 
-        <!-- 下部UI -->
+        <!-- UI：下 -->
         <div class="ui-overlay" id="bottom-overlay">
             <button class="ui-button" id="prev-button" aria-label="前のページへ" disabled>
-                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><title>前のページ</title><path d="M15.41,16.59L10.83,12l4.58-4.59L14,6l-6,6l6,6L15.41,16.59z"></path></svg>
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <title>前のページ</title>
+                    <path d="M15.41,16.59L10.83,12l4.58-4.59L14,6l-6,6l6,6L15.41,16.59z"></path>
+                </svg>
             </button>
             <span id="page-indicator-bottom">1 / 4</span>
             <button class="ui-button" id="next-button" aria-label="次のページへ">
-                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><title>次のページ</title><path d="M8.59,16.59L13.17,12L8.59,7.41L10,6l6,6l-6,6L8.59,16.59z"></path></svg>
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <title>次のページ</title>
+                    <path d="M8.59,16.59L13.17,12L8.59,7.41L10,6l6,6l-6,6L8.59,16.59z"></path>
+                </svg>
             </button>
         </div>
 
-        <!-- アクションボタン（4ページ目で表示） -->
-        <a href="https://ts-ksato.github.io/comic/viewer.html" class="action-button" id="action-button">続きはWEBで</a>
+        <!-- アクションボタン -->
+        <a href="https://ts-ksato.github.io/comic/viewer.html"
+           class="action-button"
+           id="action-button"
+           role="button"
+           aria-label="ブラウザでマンガの続きを読む">
+           続きはWEBで
+        </a>
 
-        <!-- ローディングスピナー -->
-        <div id="loading-spinner"></div> <!-- 初期クラスはJSで制御 -->
+        <!-- スピナー -->
+        <div id="loading-spinner"></div>
     </section>
 
-    <!-- マンガビューワー制御スクリプト -->
-    <script> // nonce属性を削除
+    <!-- スクリプト -->
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- 設定 ---
+            /* ---------- 設定 ---------- */
             const mangaPagesData = [
-                // 実際のマンガ画像URLに置き換えてください
-                { src: 'i_004.jpg?text=Page+1' },
-                { src: 'i_007.jpg?text=Page+2' },
-                { src: 'i_008.jpg?text=Page+3' },
-                { src: 'i_009.jpg?text=Page+4+(Last+Preview)' },
+                /* 実際の画像に合わせて拡張子を統一してください */
+                { src: 'i_004.jpg' },
+                { src: 'i_007.jpg' },
+                { src: 'i_008.jpg' },
+                { src: 'i_009.jpg' }
             ];
             const totalPages = mangaPagesData.length;
-            const ACTION_BUTTON_PAGE = 4; // アクションボタンを表示するページ番号 (定数化)
-            const SWIPE_THRESHOLD = 50; // スワイプ判定の閾値 (定数化)
+            const ACTION_BUTTON_PAGE = 4;
+            const SWIPE_THRESHOLD = 50;
+            const IMAGE_W = 768;   // 実画像サイズに合わせて変更
+            const IMAGE_H = 1280;
 
-            // --- 要素取得 ---
+            /* ---------- 要素取得 ---------- */
             const mangaViewer = document.getElementById('manga-viewer');
             const mangaPagesContainer = document.getElementById('manga-pages');
             const pageIndicatorTop = document.getElementById('page-indicator');
             const pageIndicatorBottom = document.getElementById('page-indicator-bottom');
-            // const mangaTitle = document.getElementById('manga-title'); // 未使用のためコメントアウト (必要なら復活)
             const actionButton = document.getElementById('action-button');
             const loadingSpinner = document.getElementById('loading-spinner');
             const prevButton = document.getElementById('prev-button');
@@ -359,129 +405,130 @@
             const nextZone = document.getElementById('next-zone');
             const centerZone = document.getElementById('center-zone');
 
-            // --- 状態管理 ---
+            /* ---------- 状態 ---------- */
             let currentPage = 1;
             let isUIVisible = false;
-            let isLoading = true; // 初期状態は読み込み中
+            let isLoading = true;
 
-            // --- 初期化 ---
+            /* ---------- 初期化 ---------- */
             function initMangaViewer() {
-                loadingSpinner.classList.add('visible'); // 初期スピナー表示
-                mangaPagesContainer.innerHTML = ''; // コンテナをクリア
+                loadingSpinner.classList.add('visible');
+                mangaPagesContainer.innerHTML = '';
 
                 mangaPagesData.forEach((pageData, index) => {
                     const pageDiv = document.createElement('div');
                     pageDiv.classList.add('manga-page');
                     pageDiv.setAttribute('data-page-number', index + 1);
 
+                    /* ---- 画像（<picture>）生成 ---- */
+                    const picture = document.createElement('picture');
+
+                    // AVIF
+                    const avif = document.createElement('source');
+                    avif.type = 'image/avif';
+                    avif.dataset.srcset = pageData.src.replace(/\.jpe?g$/i, '.avif');
+                    picture.appendChild(avif);
+
+                    // WebP
+                    const webp = document.createElement('source');
+                    webp.type = 'image/webp';
+                    webp.dataset.srcset = pageData.src.replace(/\.jpe?g$/i, '.webp');
+                    picture.appendChild(webp);
+
+                    // img 本体
                     const img = new Image();
                     img.classList.add('page-content');
                     img.alt = `マンガ ${index + 1}ページ目`;
-                    img.loading = 'lazy'; // 低優先度読み込みヒント
-
-                    // dataset.src に常にソースを保持
+                    img.loading = 'lazy';
+                    img.width = IMAGE_W;
+                    img.height = IMAGE_H;
                     img.dataset.src = pageData.src;
 
-                    // 最初のページのみ即時読み込み開始
+                    // 最初のページは即読み込み
                     if (index === 0) {
                         img.src = pageData.src;
+                        avif.srcset = avif.dataset.srcset;
+                        webp.srcset = webp.dataset.srcset;
                         img.classList.add('loading');
                     }
 
                     img.onload = () => handleImageLoad(img, index + 1);
                     img.onerror = () => handleImageError(img, index + 1);
 
-                    pageDiv.appendChild(img);
+                    picture.appendChild(img);
+                    pageDiv.appendChild(picture);
                     mangaPagesContainer.appendChild(pageDiv);
                 });
 
                 updatePageIndicator();
                 updateButtonStates();
-                updatePageSpecificStyles(currentPage); // 初期ページのスタイル適用
-                // 最初のページの画像読み込みはすでに開始されている
-                // loadPageImages(currentPage); // 不要かも？ img.src設定済みのため
+                updatePageSpecificStyles(currentPage);
                 setupEventListeners();
             }
 
-            // --- 画像読み込みハンドラ ---
+            /* ---------- 画像ロード ---------- */
             function handleImageLoad(img, pageNum) {
                 img.classList.remove('loading');
                 img.classList.add('loaded');
-                // 現在表示中のページの画像が読み込めたらスピナーを隠す
+
                 if (pageNum === currentPage) {
                     isLoading = false;
                     loadingSpinner.classList.remove('visible');
-                    // フィルターが適用されるべきページならスタイルを更新
                     updatePageSpecificStyles(currentPage);
                 }
-                 // 次のページもプリロードしておく (現在のページ読み込み完了後)
-                 if (pageNum === currentPage && currentPage < totalPages) {
+
+                if (pageNum === currentPage && currentPage < totalPages) {
                     loadPageImages(currentPage + 1);
                 }
             }
 
-             function handleImageError(img, pageNum) {
-                console.error(`Error loading image for page ${pageNum}: ${img.dataset.src}`);
+            function handleImageError(img, pageNum) {
+                console.error(`Error loading page ${pageNum}: ${img.dataset.src}`);
                 img.classList.remove('loading');
-                // エラー表示を追加可能 (例: img.alt を表示するなど)
                 img.alt = `画像読み込みエラー (${pageNum}ページ目)`;
-                 // 現在表示中のページのエラーならスピナーを隠す
-                 if (pageNum === currentPage) {
-                     isLoading = false;
-                     loadingSpinner.classList.remove('visible');
-                 }
+                if (pageNum === currentPage) {
+                    isLoading = false;
+                    loadingSpinner.classList.remove('visible');
+                }
             }
 
-            // --- ページ画像読み込み (指定ページとその隣接ページ) ---
-            function loadPageImages(pageNumToLoad) {
-                const pagesToPreload = [pageNumToLoad -1, pageNumToLoad, pageNumToLoad + 1]; // 前後も読み込む
+            function loadPageImages(targetPage) {
+                const vicinity = [targetPage - 1, targetPage, targetPage + 1];
+                vicinity.forEach(p => {
+                    if (p < 1 || p > totalPages) return;
+                    const pageDiv = mangaPagesContainer.querySelector(`.manga-page[data-page-number="${p}"]`);
+                    if (!pageDiv) return;
 
-                pagesToPreload.forEach(p => {
-                    if (p >= 1 && p <= totalPages) {
-                        const pageDiv = mangaPagesContainer.querySelector(`.manga-page[data-page-number="${p}"]`);
-                        if (pageDiv) {
-                            const img = pageDiv.querySelector('.page-content');
-                            // まだ読み込みが開始されていない画像 (.srcがなく、data-srcがある)
-                            if (img && !img.src && img.dataset.src) {
-                                img.src = img.dataset.src; // 読み込み開始
-                                img.classList.add('loading');
-                            }
-                            // 現在表示しようとしているページが読み込み中の場合、isLoadingをtrueにする
-                            if (p === currentPage && img && img.classList.contains('loading')) {
-                                isLoading = true;
-                                loadingSpinner.classList.add('visible');
-                            }
-                        }
+                    const picture = pageDiv.querySelector('picture');
+                    const img = picture.querySelector('.page-content');
+                    const avif = picture.querySelector('source[type="image/avif"]');
+                    const webp = picture.querySelector('source[type="image/webp"]');
+
+                    if (!img.src) {
+                        img.src = img.dataset.src;
+                        avif.srcset = avif.dataset.srcset;
+                        webp.srcset = webp.dataset.srcset;
+                        img.classList.add('loading');
+                    }
+
+                    if (p === currentPage && img.classList.contains('loading')) {
+                        isLoading = true;
+                        loadingSpinner.classList.add('visible');
                     }
                 });
             }
 
-
-            // --- ページ移動 ---
+            /* ---------- ページ操作 ---------- */
             function goToPage(pageNumber) {
-                // 範囲外またはページが読み込み中の場合は移動しない
-                if (pageNumber < 1 || pageNumber > totalPages || isLoading) {
-                     // ただし、読み込み中でもページ番号が異なる場合は移動を許可し、スピナーを表示し続ける
-                    if (pageNumber !== currentPage && pageNumber >= 1 && pageNumber <= totalPages) {
-                         // 遷移はするが、isLoadingフラグは変更しない
-                         // スピナーは表示されたままになる想定
-                         console.log("Navigating while previous page might still be loading...");
-                    } else {
-                         return;
-                    }
-                }
+                if (pageNumber < 1 || pageNumber > totalPages || isLoading) return;
 
-                 // ページ移動前にスピナーを表示する可能性に備える
-                const targetImg = mangaPagesContainer.querySelector(`.manga-page[data-page-number="${pageNumber}"] .page-content`);
+                const targetImg = mangaPagesContainer
+                    .querySelector(`.manga-page[data-page-number="${pageNumber}"] .page-content`);
+
                 if (!targetImg || !targetImg.classList.contains('loaded')) {
-                     isLoading = true; // 遷移先が未ロードならローディング状態にする
-                     loadingSpinner.classList.add('visible');
-                } else {
-                    // 遷移先がロード済みならローディング状態を解除
-                    isLoading = false;
-                    loadingSpinner.classList.remove('visible');
+                    isLoading = true;
+                    loadingSpinner.classList.add('visible');
                 }
-
 
                 currentPage = pageNumber;
                 const offset = (currentPage - 1) * -100;
@@ -489,15 +536,15 @@
 
                 updatePageIndicator();
                 updateButtonStates();
-                updatePageSpecificStyles(currentPage); // ページ固有のスタイル（フィルター、アクションボタン）を更新
-                loadPageImages(currentPage); // 新しいページの画像読み込み/確認と前後読み込み
+                updatePageSpecificStyles(currentPage);
+                loadPageImages(currentPage);
             }
 
-            // --- UI更新 ---
+            /* ---------- UI 更新 ---------- */
             function updatePageIndicator() {
-                const indicatorText = `${currentPage} / ${totalPages}`;
-                pageIndicatorTop.textContent = indicatorText;
-                pageIndicatorBottom.textContent = indicatorText;
+                const text = `${currentPage} / ${totalPages}`;
+                pageIndicatorTop.textContent = text;
+                pageIndicatorBottom.textContent = text;
             }
 
             function updateButtonStates() {
@@ -505,80 +552,66 @@
                 nextButton.disabled = currentPage === totalPages;
             }
 
-            // ページ固有のスタイル更新（フィルターとアクションボタン表示）
-            function updatePageSpecificStyles(pageNumber) {
-                 // アクションボタン表示切り替え
-                if (pageNumber === ACTION_BUTTON_PAGE) {
+            function updatePageSpecificStyles(pageNum) {
+                if (pageNum === ACTION_BUTTON_PAGE) {
                     actionButton.classList.add('visible');
                 } else {
                     actionButton.classList.remove('visible');
                 }
 
-                // フィルター用クラス切り替え
-                mangaPagesContainer.querySelectorAll('.manga-page').forEach((pageDiv, index) => {
-                    const pageNum = index + 1;
-                    const img = pageDiv.querySelector('.page-content');
-                    // ページ番号がACTION_BUTTON_PAGEと一致し、かつ画像がロード済みの場合のみフィルター適用
-                    if (pageNum === ACTION_BUTTON_PAGE && img && img.classList.contains('loaded')) {
-                        pageDiv.classList.add('page-filter-active');
+                mangaPagesContainer.querySelectorAll('.manga-page').forEach((div, idx) => {
+                    const num = idx + 1;
+                    const img = div.querySelector('.page-content');
+                    if (num === ACTION_BUTTON_PAGE && img.classList.contains('loaded')) {
+                        div.classList.add('page-filter-active');
                     } else {
-                        pageDiv.classList.remove('page-filter-active');
+                        div.classList.remove('page-filter-active');
                     }
-                 });
+                });
             }
-
 
             function toggleUI() {
                 isUIVisible = !isUIVisible;
                 mangaViewer.classList.toggle('show-ui', isUIVisible);
             }
 
-            // --- イベントリスナー設定 ---
+            /* ---------- イベント ---------- */
             function setupEventListeners() {
                 prevZone.addEventListener('click', () => goToPage(currentPage - 1));
                 nextZone.addEventListener('click', () => goToPage(currentPage + 1));
                 prevButton.addEventListener('click', () => goToPage(currentPage - 1));
                 nextButton.addEventListener('click', () => goToPage(currentPage + 1));
-
                 centerZone.addEventListener('click', toggleUI);
 
-                // スワイプ操作
-                let touchStartX = 0;
-                let touchEndX = 0;
-                mangaViewer.addEventListener('touchstart', (e) => {
-                    // UI表示中はスワイプ無効 (誤操作防止)
+                /* スワイプ */
+                let touchStartX = 0, touchEndX = 0;
+                mangaViewer.addEventListener('touchstart', e => {
                     if (isUIVisible) return;
                     touchStartX = e.changedTouches[0].screenX;
                 }, { passive: true });
 
-                mangaViewer.addEventListener('touchend', (e) => {
-                     if (isUIVisible) return;
+                mangaViewer.addEventListener('touchend', e => {
+                    if (isUIVisible) return;
                     touchEndX = e.changedTouches[0].screenX;
                     handleSwipe();
                 }, { passive: true });
 
                 function handleSwipe() {
-                    // スワイプ距離が閾値未満なら何もしない
-                    if (Math.abs(touchEndX - touchStartX) < SWIPE_THRESHOLD) {
-                        return;
-                    }
-                    if (touchEndX < touchStartX) {
-                        goToPage(currentPage + 1); // 左スワイプ -> 次へ
-                    } else if (touchEndX > touchStartX) {
-                        goToPage(currentPage - 1); // 右スワイプ -> 前へ
-                    }
-                    // スワイプ後はリセット
-                    touchStartX = 0;
-                    touchEndX = 0;
+                    if (Math.abs(touchEndX - touchStartX) < SWIPE_THRESHOLD) return;
+                    if (touchEndX < touchStartX) goToPage(currentPage + 1);
+                    else goToPage(currentPage - 1);
                 }
 
-                // ウィンドウリサイズ時の再計算は transform ベースなので通常不要
+                /* キーボード操作 */
+                document.addEventListener('keydown', e => {
+                    if (e.key === 'ArrowRight') goToPage(currentPage + 1);
+                    if (e.key === 'ArrowLeft')  goToPage(currentPage - 1);
+                });
             }
 
-            // --- 実行 ---
+            /* ---------- 実行 ---------- */
             initMangaViewer();
         });
     </script>
-
 </body>
 </html>
