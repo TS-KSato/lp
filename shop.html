@@ -84,7 +84,8 @@
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             transform: translateZ(0);
-            touch-action: pan-y; /* 縦スクロール優先を指示 */
+            /* touch-action: pan-y; */ /* 縦スクロール優先を指示 -> 水平スワイプを優先するように変更 */
+            touch-action: pan-x; /* 水平スワイプを優先し、垂直スクロールは許可しない */
         }
         .carousel-item {
             width: 100%;
@@ -307,6 +308,7 @@
     </style>
 </head>
 <body>
+    <!-- メインコンテンツ、フッター、モーダルは変更なし -->
     <main class="main-content" id="main_content" aria-label="製品紹介カルーセル">
         <div class="carousel" id="content_carousel">
             <div class="carousel-item" id="slide_1" role="group" aria-roledescription="スライド" aria-label="スライド 1: 製品概要">
@@ -378,7 +380,7 @@
 
     <div class="modal" id="details_modal" role="dialog" aria-modal="true" aria-labelledby="modal_title" aria-hidden="true">
         <div class="modal-content" role="document">
-            <button class="modal-close" aria-label="閉じる">&times;</button>
+            <button class="modal-close" aria-label="閉じる">×</button>
             <h2 id="modal_title">製品詳細情報</h2>
             <p>この画期的な製品について、さらに詳しくご紹介します。</p>
             <h3>主な特徴:</h3>
@@ -399,6 +401,7 @@
     </div>
 
     <script>
+        // JavaScriptは変更なし
         (function() {
             'use strict';
 
@@ -494,12 +497,13 @@
 
                 const log = (type, ...args) => {
                     if (isEnabled('trackCustomEvents') || (type === 'web_vitals' && isEnabled('measureWebVitals'))) {
-                        console.log(`[Perf:${type}]`, ...args);
+                        // console.log(`[Perf:${type}]`, ...args); // デバッグ時以外はコメントアウト推奨
                     }
                 };
 
                 const trackEvent = (category, data = {}) => {
                     log('event', category, data);
+                    // ここで実際のトラッキング処理（例: Google Analytics）を行う
                 };
 
                 const startMeasure = (label) => {
@@ -518,17 +522,23 @@
                 const measurePageLoadTiming = () => {
                      if (!('performance' in window) || !performance.getEntriesByType) return;
                      requestIdleCallbackSafely(() => {
-                        const navEntry = performance.getEntriesByType("navigation")[0];
-                        if (navEntry) {
-                            const timings = {
-                                ttfb: navEntry.responseStart - navEntry.requestStart,
-                                fcp: performance.getEntriesByName('first-contentful-paint')[0]?.startTime,
-                                lcp: performance.getEntriesByType('largest-contentful-paint').pop()?.startTime,
-                                domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.startTime,
-                                pageLoad: navEntry.loadEventEnd - navEntry.startTime
-                            };
-                            log('navigation', timings);
-                            trackEvent('performance_navigation', timings);
+                        try {
+                            const navEntry = performance.getEntriesByType("navigation")[0];
+                            if (navEntry) {
+                                const fcpEntry = performance.getEntriesByName('first-contentful-paint')[0];
+                                const lcpEntry = performance.getEntriesByType('largest-contentful-paint').pop();
+                                const timings = {
+                                    ttfb: navEntry.responseStart - navEntry.requestStart,
+                                    fcp: fcpEntry?.startTime,
+                                    lcp: lcpEntry?.startTime,
+                                    domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.startTime,
+                                    pageLoad: navEntry.loadEventEnd - navEntry.startTime
+                                };
+                                log('navigation', timings);
+                                trackEvent('performance_navigation', timings);
+                            }
+                        } catch (e) {
+                            console.error("Error measuring page load timing:", e);
                         }
                      }, 1000);
                 };
@@ -553,20 +563,26 @@
 
                     observeWebVitals('first-input', (entries) => {
                          const fidEntry = entries[0];
-                         if (fidEntry) { // FIDは発生しない場合もあるのでチェック
+                         if (fidEntry) {
                             const fid = fidEntry.processingStart - fidEntry.startTime;
                             log('web_vitals', `FID: ${fid.toFixed(1)}ms`); trackEvent('web_vitals', { metric: 'FID', value: fid });
                          }
                     });
 
                     let clsValue = 0;
+                    let clsEntries = [];
                     observeWebVitals('layout-shift', (entries) => {
-                         entries.forEach((entry) => { if (!entry.hadRecentInput) clsValue += entry.value; });
+                         entries.forEach((entry) => {
+                             if (!entry.hadRecentInput) {
+                                 clsValue += entry.value;
+                                 clsEntries.push(entry);
+                             }
+                         });
                     });
                      document.addEventListener('visibilitychange', () => {
                         if(document.visibilityState === 'hidden') {
                             log('web_vitals', `Final CLS: ${clsValue.toFixed(4)}`);
-                            trackEvent('web_vitals', { metric: 'CLS', value: clsValue });
+                            trackEvent('web_vitals', { metric: 'CLS', value: clsValue /*, entries: clsEntries */ }); // entriesはデバッグ用
                         }
                      }, {once: true});
                 };
@@ -588,26 +604,32 @@
                 let currentIndex = 0;
                 const totalSlides = slides.length;
                 let isDragging = false;
-                let startX = 0, currentX = 0, touchStartTime = 0;
+                let startX = 0, currentX = 0, touchStartTime = 0, startY = 0, currentY = 0;
                 let currentTransform = 0;
-                let carouselWidth = carousel.offsetWidth;
+                let carouselWidth = 0; // 初期化は updateDimensions で行う
+                let rafId = null; // requestAnimationFrame ID
+                let isScrolling = false; // 縦スクロール中かどうかのフラグ
+
+                function updateCarouselWidth() {
+                    carouselWidth = carousel.offsetWidth;
+                }
 
                 function goToSlide(index, animate = true) {
+                    if (!carouselWidth) updateCarouselWidth(); // 幅が未取得なら取得
+                    if (!carouselWidth) return; // 幅が0なら何もしない
+
                     tracker.startMeasure('slideTransition');
                     const previousIndex = currentIndex;
                     currentIndex = (index + totalSlides) % totalSlides;
-                    currentTransform = -currentIndex * 100;
+                    currentTransform = -currentIndex * carouselWidth; // %ではなくpxで計算
 
-                    carousel.style.transition = animate ? '' : 'none';
-                    requestAnimationFrame(() => {
-                        carousel.style.transform = `translate3d(${currentTransform}%, 0, 0)`;
-                        updateDots(previousIndex, currentIndex);
-                        updateSlideAccessibility(previousIndex, currentIndex);
-                        optimizeMediaPlayback(previousIndex, currentIndex);
-                        if (!animate) {
-                             setTimeout(() => { carousel.style.transition = ''; }, 0);
-                        }
-                    });
+                    // %指定だとリサイズ時にずれやすいのでpx指定に
+                    carousel.style.transform = `translate3d(${currentTransform}px, 0, 0)`;
+                    carousel.style.transition = animate ? `transform ${getComputedStyle(document.documentElement).getPropertyValue('--carousel-transition-duration')} ${getComputedStyle(document.documentElement).getPropertyValue('--carousel-transition-timing')}` : 'none';
+
+                    updateDots(previousIndex, currentIndex);
+                    updateSlideAccessibility(previousIndex, currentIndex);
+                    optimizeMediaPlayback(previousIndex, currentIndex);
 
                     tracker.trackEvent('carousel_navigate', { from: previousIndex, to: currentIndex });
                     tracker.endMeasure('slideTransition');
@@ -615,6 +637,7 @@
 
                  carousel.addEventListener('transitionend', () => {
                      requestIdleCallbackSafely(() => { preloadAdjacentSlides(); }, 500);
+                     carousel.style.transition = 'none'; // アニメーション後はtransitionを一旦解除
                  });
 
                 function updateDots(prevIndex, newIndex) {
@@ -622,39 +645,41 @@
                      dots[prevIndex]?.setAttribute('aria-selected', 'false');
                      dots[newIndex]?.classList.add('active');
                      dots[newIndex]?.setAttribute('aria-selected', 'true');
-                     dots[newIndex]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                     // ドットが多い場合を考慮してスクロール
+                     dots[newIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 }
 
                  function updateSlideAccessibility(prevIndex, newIndex) {
-                     const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details, [tabindex]:not([tabindex="-1"])';
-                     const setTabIndex = (slideIndex, value) => {
-                         if (slides[slideIndex]) {
-                             slides[slideIndex].setAttribute('aria-hidden', value === -1 ? 'true' : 'false');
-                             $$(focusableSelector, slides[slideIndex]).forEach(el => {
-                                 if (value === -1) {
-                                     el.setAttribute('tabindex', '-1');
-                                 } else {
-                                     el.removeAttribute('tabindex');
-                                 }
-                             });
-                         }
-                     };
-                     setTabIndex(prevIndex, -1);
-                     setTabIndex(newIndex, 0);
+                     slides.forEach((slide, index) => {
+                         const isCurrent = index === newIndex;
+                         slide.setAttribute('aria-hidden', !isCurrent);
+                         slide.inert = !isCurrent; // inert属性でフォーカス制御を簡略化
+                     });
                  }
 
                 function optimizeMediaPlayback(prevIndex, newIndex) {
-                    const prevVideo = slides[prevIndex]?.querySelector('video');
-                    if (prevVideo && !prevVideo.paused) {
-                        prevVideo.pause();
-                        prevVideo.currentTime = 0;
+                    // 以前のスライドのメディアを停止
+                    const prevSlide = slides[prevIndex];
+                    if (prevSlide) {
+                         const prevVideo = prevSlide.querySelector('video');
+                         if (prevVideo && !prevVideo.paused) prevVideo.pause();
+                         // 他のメディア（音声など）があれば同様に停止
                     }
+                    // 必要であれば現在のスライドのメディアを再生 (例: 動画スライド)
+                    // const currentSlide = slides[newIndex];
+                    // if (currentSlide) {
+                    //     const currentVideo = currentSlide.querySelector('video');
+                    //     if (currentVideo) currentVideo.play();
+                    // }
                 }
 
                 function preloadAdjacentSlides() {
-                    const nextIndex = (currentIndex + 1) % totalSlides;
-                    const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-                    [nextIndex, prevIndex].forEach(idx => {
+                    const indicesToPreload = [
+                        (currentIndex + 1) % totalSlides,
+                        (currentIndex - 1 + totalSlides) % totalSlides
+                    ];
+                    indicesToPreload.forEach(idx => {
+                        if (idx === currentIndex) return; // 現在のスライドは除く
                         const slide = slides[idx];
                         if (!slide) return;
                         const img = slide.querySelector('img[loading="lazy"]');
@@ -677,49 +702,87 @@
 
                 function handleTouchStart(e) {
                     if (e.touches.length !== 1) return;
+                    // 進行中のアニメーションがあればキャンセル
+                    cancelAnimationFrame(rafId);
+                    carousel.style.transition = 'none'; // 開始時に transition を確実に解除
+
                     startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
                     currentX = startX;
+                    currentY = startY;
                     touchStartTime = performance.now();
                     isDragging = true;
-                    carousel.style.transition = 'none';
+                    isScrolling = false; // スクロールフラグをリセット
+                    if (!carouselWidth) updateCarouselWidth(); // 幅が未取得なら取得
+                    currentTransform = -currentIndex * carouselWidth; // 現在のオフセットをpxで再計算
+
                     tracker.trackEvent('carousel_touch', { phase: 'start' });
                 }
 
                 function handleTouchMove(e) {
                     if (!isDragging || e.touches.length !== 1) return;
+
                     currentX = e.touches[0].clientX;
-                    let dragOffset = ((currentX - startX) / carouselWidth) * 100;
+                    currentY = e.touches[0].clientY;
+                    const diffX = currentX - startX;
+                    const diffY = currentY - startY;
 
-                     if ((currentIndex === 0 && dragOffset > 0 && totalSlides > 1) || (currentIndex === totalSlides - 1 && dragOffset < 0 && totalSlides > 1)) {
-                        dragOffset *= cfg.carousel.resistanceFactor;
-                     }
-                    const targetTransform = -currentIndex * 100 + dragOffset;
+                    // 最初のmoveイベントで、縦横どちらの動きが大きいか判定
+                    if (!isScrolling && Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 5) {
+                        isScrolling = true; // 縦スクロールと判定
+                        isDragging = false; // 水平ドラッグはキャンセル
+                        return; // 縦スクロールの場合は何もしない
+                    }
 
-                    requestAnimationFrame(() => {
-                        carousel.style.transform = `translate3d(${targetTransform}%, 0, 0)`;
-                    });
+                    // 縦スクロールではない（水平ドラッグ）場合
+                    if (!isScrolling) {
+                        // touch-action: pan-x があれば不要なはずだが念のため
+                        // e.preventDefault(); // iOS Safari等で水平スワイプ中に縦スクロールが暴発するのを防ぐ
+
+                        let dragOffset = diffX;
+
+                        // 端での抵抗
+                        if ((currentIndex === 0 && diffX > 0 && totalSlides > 1) || (currentIndex === totalSlides - 1 && diffX < 0 && totalSlides > 1)) {
+                            dragOffset *= cfg.carousel.resistanceFactor;
+                        }
+                        const targetTransform = currentTransform + dragOffset;
+
+                        // requestAnimationFrameで描画
+                        cancelAnimationFrame(rafId);
+                        rafId = requestAnimationFrame(() => {
+                            carousel.style.transform = `translate3d(${targetTransform}px, 0, 0)`;
+                        });
+                    }
                 }
 
                 function handleTouchEnd(e) {
-                    if (!isDragging) return;
+                    cancelAnimationFrame(rafId); // アニメーションフレームをキャンセル
+                    if (!isDragging || isScrolling) { // ドラッグ中でない、または縦スクロールと判定された場合は終了
+                        isDragging = false;
+                        isScrolling = false;
+                        return;
+                    }
                     isDragging = false;
-                    carousel.style.transition = '';
 
-                    const diffX = startX - currentX;
+                    const finalX = currentX; // touchendイベントにはtouchesがない場合があるのでmoveの最後の座標を使う
+                    const diffX = finalX - startX;
                     const absDiffX = Math.abs(diffX);
                     const duration = performance.now() - touchStartTime;
+                    // ゼロ除算を避ける
                     const velocity = duration > 0 ? absDiffX / duration : 0;
 
                     let nextIndex = currentIndex;
+                    // スワイプ判定: 移動距離が幅の閾値を超えるか、速度が閾値を超える場合
                     if (absDiffX > carouselWidth * cfg.carousel.swipeThreshold || velocity > cfg.carousel.velocityThreshold) {
-                        if (diffX > 0) {
+                        if (diffX < 0 && currentIndex < totalSlides - 1) { // 左スワイプ（次へ）
                             nextIndex = currentIndex + 1;
-                        } else {
+                        } else if (diffX > 0 && currentIndex > 0) { // 右スワイプ（前へ）
                             nextIndex = currentIndex - 1;
                         }
                     }
-                    goToSlide(nextIndex);
-                    tracker.trackEvent('carousel_touch', { phase: 'end', diff: diffX, velocity: velocity.toFixed(2) });
+
+                    goToSlide(nextIndex, true); // 常にアニメーションありで移動
+                    tracker.trackEvent('carousel_touch', { phase: 'end', diff: diffX, velocity: velocity.toFixed(2), nextIndex: nextIndex });
                 }
 
                 function handleKeydown(e) {
@@ -735,20 +798,29 @@
                  }
 
                 function updateDimensions() {
-                    carouselWidth = carousel.offsetWidth;
-                    goToSlide(currentIndex, false);
+                    updateCarouselWidth();
+                    goToSlide(currentIndex, false); // アニメーションなしで再配置
                     tracker.trackEvent('carousel_resize', { width: carouselWidth });
                 }
 
                 function init() {
+                    updateCarouselWidth(); // 初期幅を取得
                     dotsContainer.addEventListener('click', handleDotClick);
+                    // passive: false を検討したが、touch-action: pan-x で制御するため true のままにする
                     carousel.addEventListener('touchstart', handleTouchStart, { passive: true });
-                    carousel.addEventListener('touchmove', handleTouchMove, { passive: true }); // Changed passive to true
+                    carousel.addEventListener('touchmove', handleTouchMove, { passive: true });
                     carousel.addEventListener('touchend', handleTouchEnd);
+                    carousel.addEventListener('touchcancel', handleTouchEnd); // キャンセル時も終了処理
+
                     document.addEventListener('keydown', handleKeydown);
-                    goToSlide(0, false);
-                    updateSlideAccessibility(-1, 0);
-                    preloadAdjacentSlides();
+
+                    // 初期スライドの設定とアクセシビリティ
+                    goToSlide(0, false); // 初期表示
+                    updateSlideAccessibility(-1, 0); // 最初のスライド以外を非表示＆inertに
+
+                    // 初期プリロード
+                    requestIdleCallbackSafely(() => { preloadAdjacentSlides(); }, 500);
+
                     tracker.trackEvent('carousel_init', { slides: totalSlides });
                 }
 
@@ -775,11 +847,11 @@
 
                 let previouslyFocusedElement = null;
                 let isModalOpen = false;
-                const focusableSelector = 'button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])';
+                const focusableSelector = 'a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), details, [tabindex]:not([tabindex="-1"])';
 
                 function getFocusableElements() {
                     return $$(focusableSelector, modalContent)
-                           .filter(el => !el.disabled && el.offsetWidth > 0 && el.offsetHeight > 0);
+                           .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0); // 可視要素のみ
                 }
 
                 function handleFocusTrap(e) {
@@ -792,13 +864,15 @@
                     const firstElement = focusableElements[0];
                     const lastElement = focusableElements[focusableElements.length - 1];
 
-                    if (e.shiftKey) {
+                    if (e.shiftKey) { // Shift + Tab
                         if (document.activeElement === firstElement) {
-                            e.preventDefault(); lastElement.focus();
+                            e.preventDefault();
+                            lastElement.focus();
                         }
-                    } else {
+                    } else { // Tab
                          if (document.activeElement === lastElement) {
-                             e.preventDefault(); firstElement.focus();
+                             e.preventDefault();
+                             firstElement.focus();
                          }
                     }
                 }
@@ -809,19 +883,34 @@
                     isModalOpen = true;
                     modal.classList.add('show');
                     modal.setAttribute('aria-hidden', 'false');
-                    document.body.style.overflow = 'hidden';
-                    modal.addEventListener('keydown', handleFocusTrap);
-                    document.addEventListener('keydown', handleKeydownEscape, true);
+                    document.body.style.overflow = 'hidden'; // 背景スクロール禁止
+                    document.addEventListener('keydown', handleKeydownEscape, true); // Escapeキーリスナー追加
+                    modal.addEventListener('keydown', handleFocusTrap); // Tabキーリスナー追加 (modal自体に)
 
-                     modal.addEventListener('transitionend', () => {
-                         const focusTarget = closeBtn || getFocusableElements()[0] || modalContent;
-                         if (focusTarget) {
-                             if (focusTarget === modalContent && !modalContent.hasAttribute('tabindex')) {
-                                 modalContent.setAttribute('tabindex', '-1');
-                             }
-                             focusTarget.focus();
+                    // transitionendを待たずにフォーカスを設定しても良いが、
+                    // アニメーション中にフォーカスが当たると視覚的に違和感がある場合があるため待つ
+                    const focusTarget = closeBtn || getFocusableElements()[0] || modalContent;
+
+                    const focusAfterTransition = () => {
+                        if (focusTarget) {
+                           if (focusTarget === modalContent && !modalContent.hasAttribute('tabindex')) {
+                               modalContent.setAttribute('tabindex', '-1'); // フォーカス可能にする
+                           }
+                           focusTarget.focus();
+                        }
+                        modal.removeEventListener('transitionend', focusAfterTransition);
+                    }
+
+                    modal.addEventListener('transitionend', focusAfterTransition);
+
+                    // transitionが発火しない場合に備えてタイムアウトでもフォーカス
+                    setTimeout(() => {
+                         modal.removeEventListener('transitionend', focusAfterTransition); // 先に登録したリスナーを削除
+                         if (isModalOpen && document.activeElement !== focusTarget) { // まだ開いていてフォーカスが当たっていない場合
+                             focusAfterTransition();
                          }
-                     }, { once: true });
+                    }, 400); // transition durationより少し長め
+
                     tracker.trackEvent('modal_open');
                 }
 
@@ -830,24 +919,37 @@
                     isModalOpen = false;
                     modal.classList.remove('show');
                     modal.setAttribute('aria-hidden', 'true');
-                    document.body.style.overflow = '';
-                    modal.removeEventListener('keydown', handleFocusTrap);
+                    document.body.style.overflow = ''; // 背景スクロール許可
                     document.removeEventListener('keydown', handleKeydownEscape, true);
-                    if (previouslyFocusedElement) {
-                        previouslyFocusedElement.focus();
-                        previouslyFocusedElement = null;
+                    modal.removeEventListener('keydown', handleFocusTrap);
+                    if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+                         // モーダルが閉じるアニメーション後にフォーカスを戻す
+                         modal.addEventListener('transitionend', () => {
+                             previouslyFocusedElement.focus();
+                             previouslyFocusedElement = null;
+                         }, { once: true });
+                         // transitionが発火しない場合も考慮
+                         setTimeout(() => {
+                              if (previouslyFocusedElement) {
+                                  previouslyFocusedElement.focus();
+                                  previouslyFocusedElement = null;
+                              }
+                         }, 400);
+                    } else {
+                         previouslyFocusedElement = null;
                     }
                     tracker.trackEvent('modal_close');
                 }
 
                 function handleKeydownEscape(e) {
                     if (e.key === 'Escape' && isModalOpen) {
-                        e.stopPropagation();
+                        e.stopPropagation(); // 他のEscapeリスナーへの伝播を防ぐ
                         closeModal();
                     }
                 }
 
                 function handleModalClick(e) {
+                    // モーダルの背景（modal要素自身）がクリックされた場合に閉じる
                     if (e.target === modal) {
                         closeModal();
                     }
@@ -857,6 +959,8 @@
                     triggerBtn.addEventListener('click', openModal);
                     closeBtn.addEventListener('click', closeModal);
                     modal.addEventListener('click', handleModalClick);
+                    // 初期状態
+                    modal.setAttribute('aria-hidden', 'true');
                     tracker.trackEvent('modal_init');
                 }
 
@@ -872,34 +976,48 @@
             function setupCTAButtons(cfg, tracker) {
                 const purchaseBtn = $(cfg.selectors.purchaseBtn);
                 const cartBtn = $(cfg.selectors.cartBtn);
+                const detailsBtn = $(cfg.selectors.modalTrigger); // 詳細ボタンもトラッキング対象に
 
-                if (!purchaseBtn || !cartBtn) {
+                if (!purchaseBtn || !cartBtn || !detailsBtn) {
                     console.error('CTA buttons missing.'); return null;
                 }
 
                 let feedbackTimeout;
+                let feedbackElement = null; // フィードバック要素を保持
 
                 function showFeedback(message, duration = 3000) {
-                    const existingFeedback = $(cfg.selectors.feedbackMessage);
-                    if (existingFeedback) existingFeedback.remove();
-                    clearTimeout(feedbackTimeout);
+                    // 既存のフィードバックがあればクリア
+                    if (feedbackElement) {
+                         clearTimeout(feedbackTimeout);
+                         feedbackElement.remove();
+                         feedbackElement = null;
+                    }
 
-                    const feedback = document.createElement('div');
-                    feedback.className = 'feedback-message';
-                    feedback.textContent = message;
-                    feedback.setAttribute('role', 'status');
-                    feedback.setAttribute('aria-live', 'polite');
-                    document.body.appendChild(feedback);
+                    feedbackElement = document.createElement('div');
+                    feedbackElement.className = 'feedback-message';
+                    feedbackElement.textContent = message;
+                    feedbackElement.setAttribute('role', 'status');
+                    feedbackElement.setAttribute('aria-live', 'polite');
+                    document.body.appendChild(feedbackElement);
 
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                             feedback.classList.add('show');
-                        });
-                    });
+                    // 強制リフローを挟んでからクラス追加
+                    feedbackElement.offsetHeight;
+
+                    feedbackElement.classList.add('show');
 
                     feedbackTimeout = setTimeout(() => {
-                        feedback.classList.remove('show');
-                        feedback.addEventListener('transitionend', () => feedback.remove(), { once: true });
+                        if (feedbackElement) {
+                            feedbackElement.classList.remove('show');
+                            feedbackElement.addEventListener('transitionend', () => {
+                                if (feedbackElement) feedbackElement.remove();
+                                feedbackElement = null; // 削除後にnull化
+                            }, { once: true });
+                            // transitionが発火しない場合も考慮
+                            setTimeout(() => {
+                                if (feedbackElement) feedbackElement.remove();
+                                feedbackElement = null;
+                            }, 500); // transition durationより少し長め
+                        }
                     }, duration);
                 }
 
@@ -907,17 +1025,25 @@
                     tracker.trackEvent('cta_click', { button: 'purchase' });
                     showFeedback('購入ページへ進みます...');
                     console.log('Redirecting to purchase page...');
+                    // 例: window.location.href = '/purchase';
                 }
 
                 function handleCartClick() {
                     tracker.trackEvent('cta_click', { button: 'cart' });
                     showFeedback('カートに追加しました！');
                     console.log('Adding item to cart...');
+                    // 例: addToCartAPI();
+                }
+
+                function handleDetailsClick() {
+                    // モーダルが開くのは modalManager で処理される
+                    tracker.trackEvent('cta_click', { button: 'details' });
                 }
 
                 function init() {
                     purchaseBtn.addEventListener('click', handlePurchaseClick);
                     cartBtn.addEventListener('click', handleCartClick);
+                    detailsBtn.addEventListener('click', handleDetailsClick); // 詳細ボタンのクリックもトラッキング
                     tracker.trackEvent('cta_init');
                 }
 
