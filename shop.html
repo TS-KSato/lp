@@ -803,33 +803,31 @@
                     const diffX = currentX - startX;
                     const diffY = currentY - startY;
 
-                    // 最初のmoveイベントで、縦横どちらの動きが大きいか判定
-                    if (!isScrolling && Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 5) {
-                        isScrolling = true; // 縦スクロールと判定
-                        isDragging = false; // 水平ドラッグはキャンセル
-                        return; // 縦スクロールの場合は何もしない
+                    // 方向未確定の場合、ある程度動いてから判定する
+                    if (!isScrolling && Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+                        // 10px以内ならまだ方向を決めない（無視）
+                        return;
                     }
 
-                    // 縦スクロールではない（水平ドラッグ）場合
-                    if (!isScrolling) {
-                        // touch-action: pan-x があれば不要なはずだが念のため
-                        // e.preventDefault(); // iOS Safari等で水平スワイプ中に縦スクロールが暴発するのを防ぐ
+                    if (!isScrolling && Math.abs(diffY) > Math.abs(diffX)) {
+                        isScrolling = true; // 縦スクロールだと判定
+                        isDragging = false; // 横ドラッグをやめる
+                        return;
+                    }
 
+                    if (!isScrolling) {
                         let dragOffset = diffX;
 
-                        // 端での抵抗
+                        // 端での抵抗効果
                         if ((currentIndex === 0 && diffX > 0 && totalSlides > 1) || (currentIndex === totalSlides - 1 && diffX < 0 && totalSlides > 1)) {
                             dragOffset *= cfg.carousel.resistanceFactor;
                         }
                         const targetTransform = currentTransform + dragOffset;
 
-                        // requestAnimationFrameで描画
-                        cancelAnimationFrame(rafId);
-                        rafId = requestAnimationFrame(() => {
-                            carousel.style.transform = `translate3d(${targetTransform}px, 0, 0)`;
-                        });
+                        carousel.style.transform = `translate3d(${targetTransform}px, 0, 0)`;
                     }
                 }
+
 
                 function handleTouchEnd(e) {
                     cancelAnimationFrame(rafId); // アニメーションフレームをキャンセル
