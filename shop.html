@@ -1,47 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Single Screen LP with Horizontal Swipe</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>シングルスクリーンLP（水平スワイプ付き）</title>
+
+    <!-- リソースヒントの最適化 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- <link rel="dns-prefetch" href="https://cdn.example.com"> placeholder/APIのドメインが不明なためコメントアウト -->
+
+    <!-- クリティカルCSSのインライン化 -->
     <style>
-        /* Global Styles */
+        /* CSS変数定義 */
+        :root {
+            --footer-height: 60px;
+            --carousel-transition-duration: 0.3s;
+            --carousel-transition-timing: ease;
+            --primary-color: #ff5733;
+            --secondary-color: #007bff;
+            --text-color: #333;
+            --background-color: #f8f9fa;
+            --modal-z-index: 200;
+            --footer-z-index: 100;
+        }
+
+        /* クリティカルレンダリングパス用の最小限のスタイル */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        html {
+            /* スムーズスクロール（ページ内リンク用、現在は未使用だが将来的に役立つ可能性） */
+            scroll-behavior: smooth;
+        }
         body {
             font-family: 'Roboto', sans-serif;
             font-size: 16px;
-            background-color: #f8f9fa;
-            color: #333;
+            background-color: var(--background-color);
+            color: var(--text-color);
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            overflow: hidden; /* スクロールはカルーセル内とモーダル内で行う */
             position: relative;
         }
-
-        /* Main Content */
         .main-content {
-            height: calc(100vh - 60px);
+            /* フッターの高さをCSS変数で参照 */
+            height: calc(100vh - var(--footer-height));
             width: 100%;
             position: relative;
             overflow: hidden;
         }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            /* フッターの高さをCSS変数で参照 */
+            height: var(--footer-height);
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px;
+            z-index: var(--footer-z-index);
+        }
+    </style>
 
-        /* Carousel */
+    <!-- 非ブロッキングフォント読み込み -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    </noscript>
+
+    <style>
+        /* メインのCSSスタイル */
+        /* カルーセル */
         .carousel {
             display: flex;
             height: 100%;
-            transition: transform 0.3s ease;
+            /* transition をCSS変数で管理 */
+            transition: transform var(--carousel-transition-duration) var(--carousel-transition-timing);
             position: relative;
+            /* will-change は transform に限定 */
+            will-change: transform;
+            /* iOSでのちらつき防止 */
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0); /* ハードウェアアクセラレーション */
         }
 
         .carousel-item {
-            min-width: 100%;
+            width: 100%; /* min-width の代わりに width */
+            flex-shrink: 0; /* アイテムが縮まないようにする */
             height: 100%;
             padding: 15px;
             display: flex;
@@ -49,12 +102,15 @@
             justify-content: center;
             align-items: center;
             background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* 必要に応じて border-radius や box-shadow を追加 */
+            /* border-radius: 8px; */
+            /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+            overflow: hidden; /* コンテンツのはみ出し防止 */
         }
 
-        /* Carousel Item Content */
+        /* カルーセルアイテムのコンテンツ */
         .carousel-image {
+            display: block; /* 余白除去のため */
             max-width: 100%;
             max-height: 70%;
             object-fit: contain;
@@ -63,6 +119,7 @@
         }
 
         .carousel-video {
+            display: block; /* 余白除去のため */
             max-width: 100%;
             max-height: 70%;
             border-radius: 8px;
@@ -71,13 +128,14 @@
 
         .carousel-text {
             text-align: center;
-            padding: 20px;
+            padding: 10px; /* 少し小さく */
+            max-width: 90%; /* 幅を制限して読みやすく */
         }
 
         .carousel-text h2 {
             font-size: 24px;
-            margin-bottom: 15px;
-            color: #333;
+            margin-bottom: 10px; /* 少し小さく */
+            color: var(--text-color);
         }
 
         .carousel-text p {
@@ -89,6 +147,7 @@
         .carousel-testimonial {
             text-align: center;
             padding: 20px;
+            max-width: 90%;
         }
 
         .carousel-testimonial blockquote {
@@ -96,14 +155,29 @@
             font-style: italic;
             color: #555;
             margin-bottom: 15px;
+            position: relative; /* 引用符用 */
+            padding: 0 20px;
         }
+        /* 装飾的な引用符（任意）*/
+        .carousel-testimonial blockquote::before,
+        .carousel-testimonial blockquote::after {
+            content: '"';
+            font-size: 2em;
+            color: #ccc;
+            position: absolute;
+        }
+        .carousel-testimonial blockquote::before { left: 0; top: -10px; }
+        .carousel-testimonial blockquote::after { right: 0; bottom: -10px; }
+
 
         .carousel-testimonial cite {
             font-size: 16px;
             color: #777;
+            display: block; /* ブロック要素にして改行 */
+            margin-top: 10px;
         }
 
-        /* Carousel Navigation */
+        /* カルーセルナビゲーション */
         .carousel-nav {
             position: absolute;
             bottom: 20px;
@@ -112,11 +186,15 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 10; /* 矢印より手前に */
         }
 
         .carousel-dots {
             display: flex;
             gap: 10px;
+            padding: 5px; /* タッチしやすく */
+            background-color: rgba(255, 255, 255, 0.5); /* 背景と区別しやすく */
+            border-radius: 15px;
         }
 
         .carousel-dot {
@@ -126,10 +204,11 @@
             background-color: #ccc;
             cursor: pointer;
             transition: background-color 0.3s;
+            /* will-change は不要 */
         }
 
         .carousel-dot.active {
-            background-color: #ff5733;
+            background-color: var(--primary-color);
         }
 
         .carousel-arrows {
@@ -139,7 +218,9 @@
             transform: translateY(-50%);
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 10px; /* 少し内側に */
+            pointer-events: none; /* コンテナ自体はクリックさせない */
+            z-index: 5; /* ドットより奥 */
         }
 
         .carousel-arrow {
@@ -152,60 +233,72 @@
             align-items: center;
             cursor: pointer;
             font-size: 20px;
-            color: #333;
-            z-index: 10;
+            color: var(--text-color);
             border: none;
             transition: background-color 0.3s, color 0.3s;
+            pointer-events: auto; /* ボタン自体はクリック可能に */
+            /* will-change は transform に関連しないため削除 */
         }
 
-        .carousel-arrow:hover {
-            background-color: #ff5733;
+        .carousel-arrow:hover,
+        .carousel-arrow:focus { /* フォーカススタイルを追加 */
+            background-color: var(--primary-color);
             color: white;
+            outline: 2px solid var(--primary-color); /* フォーカスインジケーター */
+            outline-offset: 2px;
+        }
+        /* ボタン無効化時のスタイル */
+        .carousel-arrow:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        /* Footer */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            background-color: #ffffff;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0 10px;
-            z-index: 100;
-        }
-
+        /* フッター */
         .cta-button {
             border: none;
             border-radius: 5px;
             padding: 10px 20px;
             font-size: 16px;
+            font-weight: 500; /* 少し太く */
             color: #ffffff;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+            /* will-change は transform に限定 */
+            will-change: transform;
         }
 
         .cta-button:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .cta-button:focus { /* フォーカススタイルを追加 */
+            outline: 2px solid var(--secondary-color);
+            outline-offset: 2px;
         }
 
         .cta-purchase {
-            background-color: #ff5733;
+            background-color: var(--primary-color);
+        }
+        .cta-purchase:focus {
+             outline-color: var(--primary-color);
         }
 
         .cta-cart {
-            background-color: #007bff;
+            background-color: var(--secondary-color);
+        }
+        .cta-cart:focus {
+             outline-color: var(--secondary-color);
         }
 
         .cta-details {
             background-color: #6c757d;
         }
+         .cta-details:focus {
+             outline-color: #6c757d;
+        }
 
-        /* Modal */
+
+        /* モーダル */
         .modal {
             position: fixed;
             top: 0;
@@ -216,7 +309,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 200;
+            z-index: var(--modal-z-index);
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s, visibility 0.3s;
@@ -234,301 +327,1071 @@
             max-height: 80vh;
             overflow-y: auto;
             border-radius: 8px;
-            padding: 20px;
+            padding: 30px 20px 20px; /* 上部に閉じるボタン用のスペース */
             position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(0.9); /* 表示時アニメーション用 */
+            transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content {
+            transform: scale(1);
         }
 
         .modal-close {
             position: absolute;
             top: 10px;
             right: 10px;
-            font-size: 24px;
-            color: #666;
+            font-size: 28px; /* 少し大きく */
+            line-height: 1; /* 高さを調整 */
+            color: #aaa;
             cursor: pointer;
             border: none;
             background: none;
+            padding: 5px; /* タッチしやすく */
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: #333;
+            outline: none; /* または適切なフォーカススタイル */
         }
 
-        /* Responsive adjustments */
+        /* フィードバックメッセージ */
+        .feedback-message {
+            position: fixed;
+            bottom: calc(var(--footer-height) + 10px); /* フッターの上に表示 */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: calc(var(--footer-z-index) + 1); /* フッターより手前 */
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none; /* メッセージ自体は操作不可 */
+        }
+        .feedback-message.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px); /* 少し上に移動 */
+        }
+
+        /* レスポンシブ調整 */
         @media (max-width: 768px) {
             body {
                 font-size: 14px;
             }
-
-            .carousel-text h2 {
-                font-size: 20px;
-            }
-
-            .carousel-text p {
-                font-size: 14px;
-            }
-
-            .cta-button {
-                padding: 8px 16px;
-                font-size: 14px;
-            }
+            .carousel-text h2 { font-size: 20px; }
+            .carousel-text p { font-size: 14px; }
+            .carousel-testimonial blockquote { font-size: 18px; }
+            .carousel-testimonial cite { font-size: 14px; }
+            .cta-button { padding: 8px 16px; font-size: 14px; }
+            .modal-content { padding: 25px 15px 15px; }
         }
 
         @media (max-width: 480px) {
+            :root {
+                --footer-height: auto; /* 高さを自動に */
+            }
+            .main-content {
+                 /* calc不要に、ただし下部に余白が必要ならpadding-bottomを追加 */
+                 height: 100vh;
+                 padding-bottom: 80px; /* フッターの高さ分程度の目安 */
+            }
             .footer {
                 flex-wrap: wrap;
-                height: auto;
+                height: auto; /* 高さを自動に */
                 padding: 10px;
             }
-
             .cta-button {
                 margin: 5px;
-                flex: 1 0 40%;
+                flex: 1 0 40%; /* 横に2つ並ぶように */
                 font-size: 12px;
-                padding: 6px 12px;
+                padding: 8px 12px; /* パディング調整 */
+            }
+            .feedback-message {
+                bottom: 10px; /* フッターがwrapするので固定値に */
+                width: 90%;
+                text-align: center;
             }
         }
     </style>
 </head>
 <body>
-    <div class="main-content" aria-label="Product features carousel">
+    <div class="main-content" aria-label="製品特徴カルーセル" role="region">
         <div class="carousel" id="content_carousel">
-            <div class="carousel-item" id="slide_1">
-                <img src="/api/placeholder/300/200" alt="Product Image 1" class="carousel-image">
+            <div class="carousel-item" id="slide_1" role="group" aria-roledescription="スライド">
+                <img src="https://via.placeholder.com/300x200/FF5733/FFFFFF?text=製品画像+1" alt="製品画像 1" class="carousel-image" loading="lazy" decoding="async" fetchpriority="high">
                 <div class="carousel-text">
-                    <p>Highlight Feature 1</p>
+                    <p>注目機能 1 の説明</p>
                 </div>
             </div>
-            <div class="carousel-item" id="slide_2">
-                <div class="carousel-text">
-                    <h2>Key Benefit</h2>
-                    <p>Short description of the product's key benefit.</p>
+            <div class="carousel-item" id="slide_2" role="group" aria-roledescription="スライド">
+                 <div class="carousel-text">
+                    <h2>主な利点</h2>
+                    <p>製品の主な利点に関する短い説明。</p>
                 </div>
             </div>
-            <div class="carousel-item" id="slide_3">
-                <video class="carousel-video" controls loop>
-                    <source src="" type="video/mp4">
-                    Your browser does not support the video tag.
+            <div class="carousel-item" id="slide_3" role="group" aria-roledescription="スライド">
+                <!-- [修正] ダミーの動画ソースとポスター画像を追加 -->
+                <video class="carousel-video" controls loop preload="none" poster="https://via.placeholder.com/300x200/007BFF/FFFFFF?text=動画ポスター">
+                    <!-- 注意: 実際の動画ファイルパスに置き換えてください -->
+                    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                    <!-- <source src="movie.webm" type="video/webm"> -->
+                    お使いのブラウザは video タグをサポートしていません。
                 </video>
                 <div class="carousel-text">
-                    <p>Product Demo</p>
+                    <p>製品デモ動画</p>
                 </div>
             </div>
-            <div class="carousel-item" id="slide_4">
-                <div class="carousel-testimonial">
-                    <blockquote>"This product changed my life!"</blockquote>
-                    <cite>User Name</cite>
+            <div class="carousel-item" id="slide_4" role="group" aria-roledescription="スライド">
+                 <div class="carousel-testimonial">
+                    <blockquote>「この製品は私の生活を変えました！」</blockquote>
+                    <cite>– ユーザー名</cite>
                 </div>
             </div>
         </div>
-        <div class="carousel-arrows" aria-label="Carousel navigation">
-            <button class="carousel-arrow prev" aria-label="Previous slide">&#10094;</button>
-            <button class="carousel-arrow next" aria-label="Next slide">&#10095;</button>
+        <div class="carousel-arrows" aria-label="カルーセルナビゲーション">
+            <!-- [改善] disabled属性をJSで制御 -->
+            <button class="carousel-arrow prev" aria-label="前のスライド" disabled>&#10094;</button>
+            <button class="carousel-arrow next" aria-label="次のスライド">&#10095;</button>
         </div>
         <div class="carousel-nav">
-            <div class="carousel-dots">
-                <div class="carousel-dot active" data-index="0"></div>
-                <div class="carousel-dot" data-index="1"></div>
-                <div class="carousel-dot" data-index="2"></div>
-                <div class="carousel-dot" data-index="3"></div>
+            <div class="carousel-dots" role="tablist" aria-label="スライドナビゲーション">
+                <!-- [改善] role属性を追加 -->
+                <button class="carousel-dot active" data-index="0" role="tab" aria-selected="true" aria-controls="slide_1" aria-label="スライド 1"></button>
+                <button class="carousel-dot" data-index="1" role="tab" aria-selected="false" aria-controls="slide_2" aria-label="スライド 2"></button>
+                <button class="carousel-dot" data-index="2" role="tab" aria-selected="false" aria-controls="slide_3" aria-label="スライド 3"></button>
+                <button class="carousel-dot" data-index="3" role="tab" aria-selected="false" aria-controls="slide_4" aria-label="スライド 4"></button>
             </div>
         </div>
     </div>
 
-    <div class="footer" aria-label="Call to action buttons">
-        <button class="cta-button cta-purchase" id="cta_purchase">Purchase Now</button>
-        <button class="cta-button cta-cart" id="cta_cart">Add to Cart</button>
-        <button class="cta-button cta-details" id="cta_details">Learn More</button>
-    </div>
+    <footer class="footer" aria-label="アクションボタン">
+        <button class="cta-button cta-purchase" id="cta_purchase">今すぐ購入</button>
+        <button class="cta-button cta-cart" id="cta_cart">カートに追加</button>
+        <button class="cta-button cta-details" id="cta_details">詳細を見る</button>
+    </footer>
 
-    <div class="modal" id="details_modal">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-            <h2>Product Details</h2>
-            <p>This is a wonderful product with the following features:</p>
+    <!-- [改善] role="dialog", aria-modal="true" などアクセシビリティ属性を追加 -->
+    <div class="modal" id="details_modal" role="dialog" aria-modal="true" aria-labelledby="modal_title" aria-hidden="true">
+        <div class="modal-content" role="document">
+             <!-- [改善] tabindex="-1" を追加してプログラム的にフォーカス可能に -->
+            <button class="modal-close" aria-label="モーダルを閉じる" tabindex="-1">&times;</button>
+            <h2 id="modal_title">製品詳細</h2>
+            <p>これは素晴らしい製品で、以下の特徴があります:</p>
             <ul>
-                <li>Feature 1: Description of feature 1</li>
-                <li>Feature 2: Description of feature 2</li>
-                <li>Feature 3: Description of feature 3</li>
+                <li>特徴 1: 特徴1の説明</li>
+                <li>特徴 2: 特徴2の説明</li>
+                <li>特徴 3: 特徴3の説明</li>
             </ul>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam eu ligula non eros ullamcorper ultrices. Nulla facilisi. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-            <h3>Specifications:</h3>
-            <p>Size: Medium<br>
-            Weight: 300g<br>
-            Material: Premium quality<br>
-            Warranty: 1 year</p>
+            <h3>仕様:</h3>
+            <p>サイズ: M<br>
+            重量: 300g<br>
+            素材: 高品質素材<br>
+            保証: 1年</p>
         </div>
     </div>
 
     <script>
-        // Carousel Functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const carousel = document.getElementById('content_carousel');
-            const slides = Array.from(document.querySelectorAll('.carousel-item'));
-            const dots = Array.from(document.querySelectorAll('.carousel-dot'));
-            const prevBtn = document.querySelector('.carousel-arrow.prev');
-            const nextBtn = document.querySelector('.carousel-arrow.next');
-            
-            let currentIndex = 0;
-            const totalSlides = slides.length;
-            let startX, endX;
-            let isDragging = false;
+        // 即時関数でスコープを閉じる
+        (function() {
+            'use strict'; // Strict modeを有効化
 
-            // Initialize analytics tracking
-            initAnalytics();
-
-            // Move to specified slide
-            function goToSlide(index) {
-                if (index < 0) {
-                    index = totalSlides - 1;
-                } else if (index >= totalSlides) {
-                    index = 0;
+            // 設定オブジェクト
+            const config = {
+                selectors: {
+                    carousel: '#content_carousel',
+                    carouselItems: '.carousel-item',
+                    dotsContainer: '.carousel-dots', // ドットコンテナのセレクタ追加
+                    dots: '.carousel-dot',
+                    prevBtn: '.carousel-arrow.prev',
+                    nextBtn: '.carousel-arrow.next',
+                    modal: '#details_modal',
+                    modalContent: '.modal-content', // モーダルコンテンツ
+                    modalTrigger: '#cta_details',
+                    modalClose: '.modal-close'
+                },
+                animation: {
+                    // CSS変数を使う場合、JSでのduration指定は不要になるが、念のため残す
+                    duration: 300, // CSSの --carousel-transition-duration と合わせる
+                    type: 'ease' // CSSの --carousel-transition-timing と合わせる
+                },
+                performance: {
+                    trackingEnabled: true // デバッグ用にtrue、本番ではfalseにするか環境変数で管理
+                },
+                carousel: {
+                    // カルーセルの設定を追加
+                    resistanceFactor: 0.3, // 端でのスワイプ抵抗
+                    swipeThreshold: 0.15, // スワイプ距離の閾値 (画面幅に対する割合)
+                    velocityThreshold: 0.4 // スワイプ速度の閾値 (px/ms)
+                },
+                accessibility: {
+                    // アクセシビリティ関連の設定
+                    trapFocus: true // モーダル内でフォーカスをトラップするか
                 }
-                
-                currentIndex = index;
-                const offset = -currentIndex * 100;
-                carousel.style.transform = `translateX(${offset}%)`;
-                
-                // Update active dot
-                dots.forEach((dot, i) => {
-                    dot.classList.toggle('active', i === currentIndex);
-                });
+            };
 
-                // Track carousel swipe in analytics
-                trackEvent('carousel_swipe', { slide_index: currentIndex });
+            // 変数を一度だけキャッシュして再利用
+            let carouselManager;
+            let modalManager;
+            let ctaButtonManager; // CTAボタンマネージャー用
+            let performanceTracker;
+            let windowWidth; // リサイズで更新
+
+            // DOMユーティリティ
+            const $ = document.querySelector.bind(document);
+            const $$ = document.querySelectorAll.bind(document);
+
+            // DOM読み込み完了時の初期化
+            document.addEventListener('DOMContentLoaded', function() {
+                performanceTracker = createPerformanceTracker(config.performance);
+                performanceTracker.startMeasure('domReady');
+
+                windowWidth = window.innerWidth;
+
+                carouselManager = createCarouselManager(config, performanceTracker, windowWidth);
+                modalManager = createModalManager(config, performanceTracker);
+                ctaButtonManager = setupCTAButtons(config, performanceTracker); // setupCTAButtons を呼び出し
+
+                setupResizeListener();
+                initABTesting(config, performanceTracker);
+
+                performanceTracker.endMeasure('domReady');
+            });
+
+            // ページ読み込み完了時の処理
+            window.addEventListener('load', function() {
+                if (performanceTracker) {
+                    performanceTracker.measurePageLoad();
+                }
+
+                // 最初のスライド表示後に隣接スライドのプリロードを開始
+                // requestIdleCallback が使える場合は利用して、メインスレッドをブロックしないようにする
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(() => {
+                       if (carouselManager) carouselManager.preloadAdjacentSlides();
+                    }, { timeout: 2000 });
+                } else {
+                    setTimeout(() => {
+                       if (carouselManager) carouselManager.preloadAdjacentSlides();
+                    }, 1000); // フォールバック
+                }
+            });
+
+            // ウィンドウリサイズ最適化
+            function setupResizeListener() {
+                let resizeTimeout;
+                window.addEventListener('resize', function() {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(function() {
+                        const newWindowWidth = window.innerWidth;
+                        // 幅が変わった場合のみ更新
+                        if (newWindowWidth !== windowWidth) {
+                            windowWidth = newWindowWidth;
+                            if (carouselManager) {
+                                // 幅の変更を渡す
+                                carouselManager.updateDimensions(windowWidth);
+                            }
+                        }
+                    }, 200); // 200msのデバウンス
+                });
             }
 
-            // Event listeners for arrow buttons
-            prevBtn.addEventListener('click', () => {
-                goToSlide(currentIndex - 1);
-            });
-            
-            nextBtn.addEventListener('click', () => {
-                goToSlide(currentIndex + 1);
-            });
 
-            // Event listeners for dots
-            dots.forEach((dot, index) => {
-                dot.addEventListener('click', () => {
-                    goToSlide(index);
-                });
-            });
+            // パフォーマンストラッカー
+            function createPerformanceTracker(perfConfig) {
+                const measures = {};
+                const enabled = perfConfig.trackingEnabled;
 
-            // Touch events for swipe
-            carousel.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                isDragging = true;
-            });
-
-            carousel.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                e.preventDefault();
-                endX = e.touches[0].clientX;
-                const diff = startX - endX;
-                
-                // Add resistance at the edges
-                if ((currentIndex === 0 && diff < 0) || 
-                    (currentIndex === totalSlides - 1 && diff > 0)) {
-                    const resistanceFactor = 0.2;
-                    carousel.style.transform = `translateX(${-currentIndex * 100 - diff * resistanceFactor}%)`;
-                } else {
-                    carousel.style.transform = `translateX(${-currentIndex * 100 - diff / (window.innerWidth / 100)}%)`;
-                }
-            });
-
-            carousel.addEventListener('touchend', (e) => {
-                if (!isDragging) return;
-                isDragging = false;
-                
-                const threshold = 50; // Min distance to trigger slide change
-                const diff = startX - endX;
-                
-                if (Math.abs(diff) > threshold) {
-                    if (diff > 0) {
-                        // Swipe left
-                        goToSlide(currentIndex + 1);
-                    } else {
-                        // Swipe right
-                        goToSlide(currentIndex - 1);
+                // イベントトラッキング（実際の環境ではアナリティクスサービスに送信）
+                function trackEvent(category, data) {
+                     if (enabled) {
+                        console.log(`Analytics Event [${category}]:`, data);
+                        // 例: Google Analytics
+                        // if (typeof ga === 'function') {
+                        //     ga('send', 'event', category, JSON.stringify(data));
+                        // }
+                        // 例: gtag.js
+                        // if (typeof gtag === 'function') {
+                        //    gtag('event', category, data);
+                        // }
                     }
-                } else {
-                    // Not enough distance, snap back
-                    goToSlide(currentIndex);
                 }
-            });
 
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft') {
-                    goToSlide(currentIndex - 1);
-                } else if (e.key === 'ArrowRight') {
-                    goToSlide(currentIndex + 1);
+                 // Web Vitals 測定関数
+                function measureWebVitals() {
+                    if (!('PerformanceObserver' in window)) return;
+
+                    try {
+                        // LCP (Largest Contentful Paint)
+                        new PerformanceObserver((entryList) => {
+                            const entries = entryList.getEntries();
+                            if (entries.length > 0) {
+                                const lcp = entries[entries.length - 1]; // 最後の LCP を取得
+                                if (enabled) console.log(`LCP: ${lcp.startTime.toFixed(2)}ms`, lcp);
+                                trackEvent('web_vitals', { metric: 'LCP', value: lcp.startTime });
+                            }
+                        }).observe({ type: 'largest-contentful-paint', buffered: true });
+
+                        // FID (First Input Delay)
+                        new PerformanceObserver((entryList) => {
+                            const fid = entryList.getEntries()[0];
+                             if (enabled) console.log(`FID: ${fid.processingStart - fid.startTime.toFixed(2)}ms`, fid);
+                            trackEvent('web_vitals', { metric: 'FID', value: fid.processingStart - fid.startTime });
+                        }).observe({ type: 'first-input', buffered: true });
+
+                        // CLS (Cumulative Layout Shift)
+                        let clsValue = 0;
+                        new PerformanceObserver((entryList) => {
+                            entryList.getEntries().forEach((entry) => {
+                                if (!entry.hadRecentInput) { // ユーザー入力によるシフトは除く
+                                    clsValue += entry.value;
+                                }
+                            });
+                            if (enabled) console.log(`CLS: ${clsValue.toFixed(4)}`, entryList.getEntries());
+                            // CLSはセッション中に複数回発生するため、最後にまとめて送信するなど戦略が必要
+                            // trackEvent('web_vitals', { metric: 'CLS', value: clsValue });
+                        }).observe({ type: 'layout-shift', buffered: true });
+
+                        // FCP (First Contentful Paint)
+                        new PerformanceObserver((entryList) => {
+                            const fcp = entryList.getEntriesByName('first-contentful-paint')[0];
+                            if (fcp) {
+                                if (enabled) console.log(`FCP: ${fcp.startTime.toFixed(2)}ms`, fcp);
+                                trackEvent('web_vitals', { metric: 'FCP', value: fcp.startTime });
+                            }
+                        }).observe({ type: 'paint', buffered: true });
+
+
+                    } catch (e) {
+                        console.error('PerformanceObserver error:', e);
+                    }
                 }
-            });
 
-            // Modal functionality
-            const modal = document.getElementById('details_modal');
-            const detailsBtn = document.getElementById('cta_details');
-            const closeBtn = document.querySelector('.modal-close');
 
-            detailsBtn.addEventListener('click', () => {
-                modal.classList.add('show');
-                trackEvent('cta_click', { button: 'learn_more' });
-            });
+                return {
+                    startMeasure: function(label) {
+                        if (!enabled) return;
+                        measures[label] = { start: performance.now() };
+                    },
+                    endMeasure: function(label) {
+                        if (!enabled || !measures[label] || measures[label].end) return;
+                        measures[label].end = performance.now();
+                        measures[label].duration = measures[label].end - measures[label].start;
+                        console.log(`Performance [${label}]: ${measures[label].duration.toFixed(2)}ms`);
+                        trackEvent('performance_custom', {
+                            metric: label,
+                            duration: measures[label].duration
+                        });
+                    },
+                    measurePageLoad: function() {
+                        if (!enabled || !('performance' in window) || !('timing' in window.performance)) return;
+                        // Navigation Timing API Level 2 を優先
+                        const navEntry = performance.getEntriesByType("navigation")[0];
+                        if (navEntry) {
+                            const ttfb = navEntry.responseStart - navEntry.startTime;
+                            const domContentLoaded = navEntry.domContentLoadedEventEnd - navEntry.startTime;
+                            const pageLoadTime = navEntry.loadEventEnd - navEntry.startTime;
 
-            closeBtn.addEventListener('click', () => {
-                modal.classList.remove('show');
-            });
+                            console.log(`TTFB: ${ttfb.toFixed(2)}ms`);
+                            console.log(`DOMContentLoaded: ${domContentLoaded.toFixed(2)}ms`);
+                            console.log(`Page Load Time: ${pageLoadTime.toFixed(2)}ms`);
 
-            // Close modal when clicking outside content
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
+                            trackEvent('performance_navigation', {
+                                ttfb: ttfb,
+                                dom_content_loaded: domContentLoaded,
+                                page_load_time: pageLoadTime
+                            });
+                        } else { // Fallback to Timing API Level 1 (Deprecated)
+                            const perfData = window.performance.timing;
+                            const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+                            const domReadyTime = perfData.domComplete - perfData.domLoading;
+                            if (pageLoadTime > 0) {
+                                console.log(`Page Load Time (legacy): ${pageLoadTime}ms`);
+                                trackEvent('performance_navigation_legacy', { page_load_time: pageLoadTime });
+                            }
+                            if (domReadyTime > 0) {
+                                console.log(`DOM Ready Time (legacy): ${domReadyTime}ms`);
+                                trackEvent('performance_navigation_legacy', { dom_ready_time: domReadyTime });
+                            }
+                        }
+                         // Web Vitals の測定を開始
+                        measureWebVitals();
+                    },
+                    trackEvent: trackEvent // 公開メソッドとして trackEvent を提供
+                };
+            }
+
+            // カルーセルマネージャー
+            function createCarouselManager(cfg, tracker, initialWindowWidth) {
+                const carousel = $(cfg.selectors.carousel);
+                const slides = $$(cfg.selectors.carouselItems);
+                const dotsContainer = $(cfg.selectors.dotsContainer);
+                const dots = $$(cfg.selectors.dots);
+                const prevBtn = $(cfg.selectors.prevBtn);
+                const nextBtn = $(cfg.selectors.nextBtn);
+
+                if (!carousel || !slides.length || !dotsContainer || !dots.length || !prevBtn || !nextBtn) {
+                    console.error('Carousel elements not found.');
+                    return null; // 初期化失敗
+                }
+
+                let currentIndex = 0;
+                const totalSlides = slides.length;
+                let startX = 0, currentX = 0; // touchmove用にcurrentXも保持
+                let isDragging = false;
+                let currentTransformValue = 0; // アニメーション中のtransform値を保持
+                let touchStartTime = 0;
+                let currentWidth = initialWindowWidth; // カルーセル幅のキャッシュ
+
+                // [改善] Intersection Observerを使った遅延読み込み/プリロードの例（オプション）
+                // const observer = ('IntersectionObserver' in window) ? new IntersectionObserver(handleIntersection, { root: carousel, rootMargin: '0px', threshold: 0.1 }) : null;
+
+                // function handleIntersection(entries, observer) {
+                //     entries.forEach(entry => {
+                //         if (entry.isIntersecting) {
+                //             const slide = entry.target;
+                //             // 画像の遅延読み込み解除
+                //             const img = slide.querySelector('img[loading="lazy"]');
+                //             if (img) {
+                //                 img.loading = 'eager';
+                //             }
+                //             // 動画のメタデータプリロード
+                //             const video = slide.querySelector('video[preload="none"]');
+                //             if (video) {
+                //                 video.preload = 'metadata';
+                //             }
+                //             // 一度表示されたら監視を解除
+                //             observer.unobserve(slide);
+                //         }
+                //     });
+                // }
+
+                // 先行してスライドのプリロード設定（現在の実装: タイマーベース）
+                function preloadAdjacentSlides() {
+                    const nextSlideIndex = (currentIndex + 1) % totalSlides;
+                    const prevSlideIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+                    const slidesToPreloadIndexes = [nextSlideIndex, prevSlideIndex];
+
+                    // 現在のスライドと隣接スライド以外は preload="none" に戻すなど、より高度な制御も可能
+
+                    slidesToPreloadIndexes.forEach(index => {
+                        const slide = slides[index];
+                        if (!slide) return;
+
+                        const img = slide.querySelector('img[loading="lazy"]');
+                        if (img) {
+                            // loading="lazy" から "eager" に変更することでブラウザに優先読み込みを促す
+                            img.loading = 'eager';
+                        }
+
+                        const video = slide.querySelector('video[preload="none"]');
+                        if (video) {
+                             // preload="metadata" は動画のメタデータ（長さ、サイズなど）のみ読み込む
+                            video.preload = 'metadata';
+                        }
+                    });
+                     tracker.trackEvent('carousel_preload', { current_index: currentIndex });
+                }
+
+                 // スライド移動関数
+                function goToSlide(index, animate = true) {
+                    if (index === currentIndex && animate) return; // 同じスライドへのアニメーション移動は無視
+
+                    tracker.startMeasure('slideTransition');
+
+                    // インデックスを正規化
+                    index = (index + totalSlides) % totalSlides;
+
+                    const previousIndex = currentIndex;
+                    currentIndex = index;
+
+                    // transform値を計算
+                    currentTransformValue = -currentIndex * 100;
+
+                    // アニメーション設定
+                    carousel.style.transition = animate
+                        ? `transform ${cfg.animation.duration}ms ${cfg.animation.type}`
+                        : 'none';
+
+                    // requestAnimationFrameでレンダリングを最適化
+                    requestAnimationFrame(() => {
+                        carousel.style.transform = `translate3d(${currentTransformValue}%, 0, 0)`;
+
+                        // アニメーションなしの場合、次のフレームでtransitionを戻す（重要）
+                        if (!animate) {
+                           // 微小な遅延の後でトランジションを再有効化
+                           setTimeout(() => {
+                               carousel.style.transition = `transform ${cfg.animation.duration}ms ${cfg.animation.type}`;
+                           }, 0);
+                        }
+
+                        updateDots(previousIndex, currentIndex);
+                        updateArrowStates();
+                        optimizeVideoPlayback(previousIndex, currentIndex);
+                        // 遷移完了後にプリロード（transitionend イベントを使う方が正確）
+                        // preloadAdjacentSlides(); // transitionendで呼ぶように変更
+
+                        tracker.trackEvent('carousel_swipe', { slide_index: currentIndex, previous_index: previousIndex, method: animate ? 'programmatic' : 'direct' });
+                        tracker.endMeasure('slideTransition');
+                    });
+                }
+
+                // トランジション完了イベントハンドラ
+                function handleTransitionEnd() {
+                    // transitionend でプリロードを実行
+                    preloadAdjacentSlides();
+                }
+                 carousel.addEventListener('transitionend', handleTransitionEnd);
+
+
+                // ドット表示更新
+                function updateDots(prevIndex, newIndex) {
+                     if (dots[prevIndex]) dots[prevIndex].classList.remove('active');
+                     if (dots[prevIndex]) dots[prevIndex].setAttribute('aria-selected', 'false'); // A11y
+                     if (dots[newIndex]) dots[newIndex].classList.add('active');
+                     if (dots[newIndex]) dots[newIndex].setAttribute('aria-selected', 'true'); // A11y
+                }
+
+                // 矢印ボタンの状態更新
+                function updateArrowStates() {
+                    // 無限ループでない場合、端でボタンを無効化
+                    // prevBtn.disabled = currentIndex === 0;
+                    // nextBtn.disabled = currentIndex === totalSlides - 1;
+                    // 現在は無限ループなので常に有効
+                    prevBtn.disabled = false;
+                    nextBtn.disabled = false;
+                }
+
+                // ビデオ再生の最適化
+                function optimizeVideoPlayback(prevIndex, newIndex) {
+                    // 前のスライドのビデオを停止・リセット
+                    const prevSlide = slides[prevIndex];
+                    if (prevSlide) {
+                        const prevVideo = prevSlide.querySelector('video');
+                        if (prevVideo && !prevVideo.paused) {
+                            prevVideo.pause();
+                            prevVideo.currentTime = 0; // 再生位置を最初に戻す
+                            prevVideo.preload = 'metadata'; // 必要に応じてプリロード設定を戻す
+                        }
+                    }
+
+                    // 現在のスライドのビデオがあれば再生準備
+                    const currentSlide = slides[newIndex];
+                    if (currentSlide) {
+                        const currentVideo = currentSlide.querySelector('video');
+                        if (currentVideo) {
+                            currentVideo.preload = 'auto'; // 自動でデータ読み込み開始
+                            // autoplay属性があるか、または特定の条件下で再生を試みる
+                            if (currentVideo.hasAttribute('autoplay') || currentVideo.dataset.autoplay === 'true') {
+                                // play() は Promise を返す。ユーザー操作起因でないと失敗することが多い
+                                currentVideo.play().catch(e => {
+                                    console.warn('Video auto-play prevented:', e);
+                                    // 再生ボタンを表示するなどのフォールバック処理をここに記述
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // --- イベントハンドラー ---
+                function handlePrevClick() { goToSlide(currentIndex - 1); }
+                function handleNextClick() { goToSlide(currentIndex + 1); }
+
+                function handleDotClick(e) {
+                     // クリックされた要素がドットボタンか、その子要素かを確認
+                    const dot = e.target.closest(cfg.selectors.dots);
+                    if (dot && dotsContainer.contains(dot)) {
+                         const index = parseInt(dot.dataset.index, 10);
+                         if (!isNaN(index) && index !== currentIndex) {
+                            goToSlide(index);
+                        }
+                    }
+                }
+
+                function handleTouchStart(e) {
+                    startX = e.touches[0].clientX;
+                    currentX = startX; // currentXも初期化
+                    touchStartTime = Date.now();
+                    isDragging = true;
+                    // ドラッグ開始時にトランジションを無効化
+                    carousel.style.transition = 'none';
+                    tracker.trackEvent('carousel_touch', { phase: 'start' });
+                }
+
+                function handleTouchMove(e) {
+                    if (!isDragging) return;
+
+                     // [修正] passive: true に対応するため preventDefault は呼ばない
+                     // e.preventDefault(); // カルーセル内の縦スクロールを防ぐ場合
+
+                    const touch = e.touches[0];
+                    const diffX = touch.clientX - currentX; // 前回のmoveからの差分
+                    currentX = touch.clientX; // 現在位置を更新
+
+                    // スライドの端での抵抗を計算
+                    const totalDiff = currentX - startX; // ドラッグ開始からの合計差分
+                    let dragOffset = (totalDiff / currentWidth) * 100; // %単位のオフセット
+
+                    // 端での抵抗
+                    if ((currentIndex === 0 && totalDiff > 0) || (currentIndex === totalSlides - 1 && totalDiff < 0)) {
+                        dragOffset *= cfg.carousel.resistanceFactor;
+                    }
+
+                    // 現在の transform 値にドラッグによるオフセットを加える
+                    currentTransformValue = -currentIndex * 100 + dragOffset;
+
+                    // requestAnimationFrame で描画をスムーズに
+                    requestAnimationFrame(() => {
+                        carousel.style.transform = `translate3d(${currentTransformValue}%, 0, 0)`;
+                    });
+                }
+
+                function handleTouchEnd(e) {
+                    if (!isDragging) return;
+                    isDragging = false;
+
+                    // ドラッグ終了時にトランジションを再有効化
+                    carousel.style.transition = `transform ${cfg.animation.duration}ms ${cfg.animation.type}`;
+
+                    const touchEndTime = Date.now();
+                    const touchDuration = touchEndTime - touchStartTime;
+                    // changedTouches を使う方が end イベントの正確な位置を取得できる
+                    const endX = e.changedTouches[0].clientX;
+                    const diff = startX - endX;
+                    const absDiff = Math.abs(diff);
+
+                    // スワイプ速度 (px/ms)
+                    const velocity = absDiff / touchDuration;
+
+                    // スワイプ判定
+                    const threshold = currentWidth * cfg.carousel.swipeThreshold; // 画面幅のN%
+
+                    let nextIndex = currentIndex;
+                    if (absDiff > threshold || velocity > cfg.carousel.velocityThreshold) {
+                         // 十分な距離をスワイプしたか、速度が閾値を超えた場合
+                        if (diff > 0) { // 左スワイプ (次へ)
+                            nextIndex = currentIndex + 1;
+                        } else { // 右スワイプ (前へ)
+                            nextIndex = currentIndex - 1;
+                        }
+                    }
+
+                    // 最終的なスライド位置へ移動
+                    goToSlide(nextIndex); // goToSlide内でインデックスは正規化される
+
+                    tracker.trackEvent('carousel_touch', { phase: 'end', diff: diff, duration: touchDuration, velocity: velocity });
+                }
+
+                function handleKeydown(e) {
+                    // モーダル表示中など、他の要素がアクティブな場合はカルーセルのキー操作を無効化
+                    if (document.activeElement && document.activeElement !== document.body) {
+                         // 例えばモーダルが開いていて、フォーカスがモーダル内にある場合など
+                         if ($(cfg.selectors.modal).classList.contains('show')) return;
+                    }
+
+                    switch (e.key) {
+                        case 'ArrowLeft':
+                            e.preventDefault(); // ページのスクロールを防ぐ
+                            goToSlide(currentIndex - 1);
+                            break;
+                        case 'ArrowRight':
+                             e.preventDefault(); // ページのスクロールを防ぐ
+                            goToSlide(currentIndex + 1);
+                            break;
+                        case 'Home': // 最初のスライドへ
+                            e.preventDefault();
+                            goToSlide(0);
+                            break;
+                        case 'End': // 最後のスライドへ
+                            e.preventDefault();
+                             goToSlide(totalSlides - 1);
+                             break;
+                    }
+                }
+
+                // --- 初期化と破棄 ---
+                function init() {
+                    // イベントリスナーを設定
+                    prevBtn.addEventListener('click', handlePrevClick);
+                    nextBtn.addEventListener('click', handleNextClick);
+                    dotsContainer.addEventListener('click', handleDotClick); // イベント委任
+
+                    // [修正] touchmove は passive: true に変更
+                    carousel.addEventListener('touchstart', handleTouchStart, { passive: true });
+                    carousel.addEventListener('touchmove', handleTouchMove, { passive: true });
+                    carousel.addEventListener('touchend', handleTouchEnd);
+
+                    // キーボードナビゲーション (ドキュメント全体でリッスン)
+                    document.addEventListener('keydown', handleKeydown);
+
+                    // 初期状態設定
+                    goToSlide(0, false); // アニメーションなしで初期スライドへ
+                    updateArrowStates();
+
+                    // [改善] Intersection Observer の初期化 (オプション)
+                    // if (observer) {
+                    //     slides.forEach(slide => observer.observe(slide));
+                    // } else {
+                    //     // フォールバック: 最初の数スライドを手動でプリロード
+                    //     preloadAdjacentSlides();
+                    // }
+
+                     tracker.trackEvent('carousel_init', { total_slides: totalSlides });
+                }
+
+                 // リソース解放
+                function destroy() {
+                     prevBtn.removeEventListener('click', handlePrevClick);
+                     nextBtn.removeEventListener('click', handleNextClick);
+                     dotsContainer.removeEventListener('click', handleDotClick);
+                     carousel.removeEventListener('touchstart', handleTouchStart);
+                     carousel.removeEventListener('touchmove', handleTouchMove);
+                     carousel.removeEventListener('touchend', handleTouchEnd);
+                     document.removeEventListener('keydown', handleKeydown);
+                     carousel.removeEventListener('transitionend', handleTransitionEnd);
+
+                     // [改善] Intersection Observer の破棄 (オプション)
+                     // if (observer) observer.disconnect();
+
+                      tracker.trackEvent('carousel_destroy');
+                      console.log('Carousel destroyed');
+                }
+
+                // カルーセルの動的サイズ更新
+                function updateDimensions(newWindowWidth) {
+                    currentWidth = newWindowWidth; // 新しい幅をキャッシュ
+                    // アニメーションなしで現在のスライドに再調整
+                    goToSlide(currentIndex, false);
+                    tracker.trackEvent('carousel_resize', { new_width: currentWidth });
+                }
+
+                // 初期化実行
+                init();
+
+                // パブリックAPI
+                return {
+                    goToSlide: goToSlide,
+                    getCurrentIndex: () => currentIndex,
+                    updateDimensions: updateDimensions,
+                    preloadAdjacentSlides: preloadAdjacentSlides, // 手動プリロード用
+                    destroy: destroy
+                };
+            }
+
+
+            // モーダル管理
+            function createModalManager(cfg, tracker) {
+                const modal = $(cfg.selectors.modal);
+                const modalContent = $(cfg.selectors.modalContent);
+                const triggerBtn = $(cfg.selectors.modalTrigger);
+                const closeBtn = modal ? modal.querySelector(cfg.selectors.modalClose) : null;
+
+                if (!modal || !modalContent || !triggerBtn || !closeBtn) {
+                    console.error('Modal elements not found.');
+                    return null; // 初期化失敗
+                }
+
+                let previouslyFocusedElement = null; // モーダルを開く前のフォーカス要素
+
+                // モーダル内のフォーカス可能な要素を取得する関数
+                function getFocusableElements() {
+                    const focusableSelector = 'button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])';
+                    return Array.from(modalContent.querySelectorAll(focusableSelector))
+                           .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0); // 可視要素のみ
+                }
+
+                // フォーカストラップハンドラー
+                function handleFocusTrap(e) {
+                    if (e.key !== 'Tab' || !cfg.accessibility.trapFocus) return;
+
+                    const focusableElements = getFocusableElements();
+                    if (focusableElements.length === 0) {
+                        e.preventDefault(); // フォーカス可能な要素がない場合は何もしない
+                        return;
+                    }
+
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+
+                    if (e.shiftKey) { // Shift + Tab
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus(); // 最初の要素でShift+Tabなら最後の要素へ
+                        }
+                    } else { // Tab
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus(); // 最後の要素でTabなら最初の要素へ
+                        }
+                    }
+                     // モーダル自体やモーダルコンテンツにフォーカスが当たった場合の処理も考慮するとより堅牢
+                }
+
+
+                // モーダルを開く
+                function openModal() {
+                    previouslyFocusedElement = document.activeElement; // 現在のフォーカスを保存
+
+                    modal.classList.add('show');
+                    modal.setAttribute('aria-hidden', 'false'); // A11y
+                    document.body.style.overflow = 'hidden'; // 背景のスクロールを禁止
+
+                    tracker.trackEvent('cta_click', { button: 'learn_more' });
+
+                    // イベントリスナーを追加
+                    document.addEventListener('keydown', handleKeydown);
+                    modal.addEventListener('keydown', handleFocusTrap); // フォーカストラップ用
+
+                    // モーダルが開いた後、最初のフォーカス可能な要素（または閉じるボタン）にフォーカスを移動
+                    setTimeout(() => {
+                        const focusableElements = getFocusableElements();
+                        if (focusableElements.length > 0) {
+                            // 閉じるボタンが見つかれば優先的にフォーカス、なければ最初の要素
+                            const closeBtnFocusable = focusableElements.find(el => el === closeBtn);
+                            if(closeBtnFocusable) {
+                                closeBtnFocusable.focus();
+                            } else {
+                                focusableElements[0].focus();
+                            }
+                        } else {
+                           modalContent.setAttribute('tabindex', '-1'); // フォーカス可能な要素がない場合、コンテンツ自体にフォーカス
+                           modalContent.focus();
+                        }
+                    }, 100); // CSSトランジションを考慮して少し遅延
+                     tracker.trackEvent('modal_open');
+                }
+
+                // モーダルを閉じる
+                function closeModal() {
                     modal.classList.remove('show');
+                    modal.setAttribute('aria-hidden', 'true'); // A11y
+                    document.body.style.overflow = ''; // 背景のスクロールを許可
+
+                    // イベントリスナーを削除
+                    document.removeEventListener('keydown', handleKeydown);
+                    modal.removeEventListener('keydown', handleFocusTrap);
+
+                    // フォーカスを元の要素に戻す
+                    if (previouslyFocusedElement) {
+                        previouslyFocusedElement.focus();
+                        previouslyFocusedElement = null; // 参照をクリア
+                    }
+                     tracker.trackEvent('modal_close');
                 }
-            });
 
-            // CTA button click handlers
-            document.getElementById('cta_purchase').addEventListener('click', () => {
-                window.location.href = '/checkout';
-                trackEvent('cta_click', { button: 'purchase_now' });
-            });
-
-            document.getElementById('cta_cart').addEventListener('click', () => {
-                // Simulate add to cart functionality
-                alert('Item added to cart!');
-                trackEvent('cta_click', { button: 'add_to_cart' });
-            });
-
-            // Analytics tracking function
-            function initAnalytics() {
-                // This would be replaced with actual analytics implementation
-                console.log('Analytics initialized');
-                trackEvent('page_view', { page: 'landing_page' });
-
-                // A/B testing variant detection
-                const isVariantB = Math.random() > 0.5;
-                if (isVariantB) {
-                    // Swap primary/secondary button colors
-                    document.querySelector('.cta-purchase').style.backgroundColor = '#007bff';
-                    document.querySelector('.cta-cart').style.backgroundColor = '#ff5733';
-                    console.log('A/B testing: Variant B active');
-                } else {
-                    console.log('A/B testing: Variant A active');
+                // キーダウンハンドラー（Escapeキー）
+                function handleKeydown(e) {
+                    if (e.key === 'Escape') {
+                        closeModal();
+                    }
                 }
+
+                // モーダル外クリックハンドラー
+                function handleModalClick(e) {
+                    // クリックがモーダルコンテンツの外側（背景部分）で行われたか確認
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                }
+
+                // --- 初期化と破棄 ---
+                function init() {
+                    triggerBtn.addEventListener('click', openModal);
+                    closeBtn.addEventListener('click', closeModal);
+                    modal.addEventListener('click', handleModalClick);
+                     tracker.trackEvent('modal_init');
+                }
+
+                function destroy() {
+                    triggerBtn.removeEventListener('click', openModal);
+                    closeBtn.removeEventListener('click', closeModal);
+                    modal.removeEventListener('click', handleModalClick);
+                    // 開いたまま破棄される場合に備えて念のためキーダウンリスナーも削除
+                    document.removeEventListener('keydown', handleKeydown);
+                    modal.removeEventListener('keydown', handleFocusTrap);
+                     tracker.trackEvent('modal_destroy');
+                    console.log('Modal destroyed');
+                }
+
+                init();
+
+                return {
+                    openModal: openModal,
+                    closeModal: closeModal,
+                    destroy: destroy
+                };
             }
 
-            function trackEvent(eventName, eventData) {
-                // This would be replaced with actual analytics tracking
-                console.log(`Event tracked: ${eventName}`, eventData);
+            // CTA ボタンの設定
+            function setupCTAButtons(cfg, tracker) {
+                const purchaseBtn = $('#cta_purchase');
+                const cartBtn = $('#cta_cart');
+                // detailsBtn はモーダルマネージャーが処理するのでここでは不要
+
+                if (!purchaseBtn || !cartBtn) {
+                    console.error('CTA buttons not found.');
+                    return null;
+                }
+
+                // --- イベントハンドラー ---
+                // [修正] arguments.callee を使わないように、関数を定義して参照する
+                const handlePurchaseClick = function() {
+                    tracker.trackEvent('cta_click', { button: 'purchase_now' });
+                    console.log('Redirecting to checkout page...');
+                    // 実際の遷移: window.location.href = '/checkout';
+                    showFeedback('購入ページへ移動します...'); // 仮のフィードバック
+                };
+
+                const handleCartClick = function() {
+                    tracker.trackEvent('cta_click', { button: 'add_to_cart' });
+                    console.log('Item added to cart');
+                    // カートに追加するAPI呼び出しなどをここで行う
+                    // 例: addToCartAPI().then(() => showFeedback('カートに追加しました！'));
+                    showFeedback('カートに追加しました！'); // 成功フィードバック
+                };
+
+                // フィードバック表示用のヘルパー関数
+                let feedbackTimeout;
+                function showFeedback(message) {
+                    const existingFeedback = $('.feedback-message');
+                    if (existingFeedback) existingFeedback.remove(); // 既存メッセージ削除
+                    clearTimeout(feedbackTimeout); // 既存タイマー削除
+
+                    const feedback = document.createElement('div');
+                    feedback.className = 'feedback-message';
+                    feedback.textContent = message;
+                    feedback.setAttribute('role', 'status'); // スクリーンリーダー用
+                    feedback.setAttribute('aria-live', 'polite'); // 穏やかに通知
+                    document.body.appendChild(feedback);
+
+                    // 表示アニメーション
+                    requestAnimationFrame(() => {
+                         feedback.classList.add('show');
+                    });
+
+                    // 自動的に消すタイマー
+                    feedbackTimeout = setTimeout(() => {
+                        feedback.classList.remove('show');
+                        // トランジション後に要素を削除
+                        feedback.addEventListener('transitionend', () => feedback.remove(), { once: true });
+                    }, 3000);
+                }
+
+                // --- 初期化と破棄 ---
+                function init() {
+                    purchaseBtn.addEventListener('click', handlePurchaseClick);
+                    cartBtn.addEventListener('click', handleCartClick);
+                     tracker.trackEvent('cta_init');
+                }
+
+                // [修正] 正しい destroy 関数
+                function destroy() {
+                    purchaseBtn.removeEventListener('click', handlePurchaseClick);
+                    cartBtn.removeEventListener('click', handleCartClick);
+                    clearTimeout(feedbackTimeout); // タイマーもクリア
+                     tracker.trackEvent('cta_destroy');
+                    console.log('CTA Buttons destroyed');
+                }
+
+                init();
+
+                return {
+                    destroy: destroy
+                };
             }
 
-            // Image optimization: Check for WebP support and lazy loading
-            const supportsWebp = document.createElement('canvas')
-                .toDataURL('image/webp').indexOf('data:image/webp') === 0;
-            
-            if (supportsWebp) {
-                // If WebP is supported, we would convert images
-                console.log('WebP supported');
+            // A/Bテスト初期化
+            function initABTesting(cfg, tracker) {
+                // より安定した方法（例: CookieやLocalStorageに基づく）を推奨
+                const variant = (localStorage.getItem('ab_test_variant') || (Math.random() < 0.5 ? 'A' : 'B'));
+                localStorage.setItem('ab_test_variant', variant); // セッション間で維持
+
+                if (variant === 'B') {
+                     // バリアントB: ボタンカラーを入れ替え、テキスト変更など
+                    const purchaseBtn = $('.cta-purchase');
+                    const cartBtn = $('.cta-cart');
+                    if (purchaseBtn && cartBtn) {
+                         // 元の色を一時保存
+                         const originalPurchaseBg = purchaseBtn.style.backgroundColor;
+                         const originalCartBg = cartBtn.style.backgroundColor;
+                         // 色を入れ替え（CSS変数を使っている場合は変数を上書きする方が良い）
+                         purchaseBtn.style.backgroundColor = 'var(--secondary-color)'; // 青色に
+                         cartBtn.style.backgroundColor = 'var(--primary-color)'; // オレンジ色に
+                         // テキストも少し変えてみる
+                         purchaseBtn.textContent = '今すぐゲット';
+                    }
+                     tracker.trackEvent('ab_testing', { variant: 'B', description: 'Swapped button colors and text' });
+                     console.log('A/B Test: Variant B active');
+                 } else {
+                     // バリアントA (コントロール) は何もしない
+                     tracker.trackEvent('ab_testing', { variant: 'A', description: 'Original button colors and text' });
+                      console.log('A/B Test: Variant A active');
+                 }
             }
 
-            // Initialize carousel on first slide
-            goToSlide(0);
-        });
+
+            // リソース解放（ページ離脱時）
+            // [改善] SPAでない場合は必須ではないことが多いが、念のため残す
+            // window.addEventListener('beforeunload', function() {
+            //     if (carouselManager) carouselManager.destroy();
+            //     if (modalManager) modalManager.destroy();
+            //     if (ctaButtonManager) ctaButtonManager.destroy(); // CTAも破棄
+            //     // パフォーマンストラッカー等の破棄処理も必要なら追加
+            // });
+
+             // サービスワーカー登録（オフラインサポート）
+             if ('serviceWorker' in navigator) {
+                 window.addEventListener('load', function() {
+                     navigator.serviceWorker.register('/service-worker.js') // 実際のパスを確認
+                         .then(function(registration) {
+                             console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                         })
+                         .catch(function(err) {
+                             console.log('ServiceWorker registration failed: ', err);
+                         });
+                 });
+             }
+
+             // フォント読み込み完了検知（CSSで .fonts-loaded を使う場合）
+             if ('fonts' in document) {
+                 Promise.all([
+                     document.fonts.load('1em Roboto'), // weight を指定しなくてもマッチするはず
+                     // document.fonts.load('300 1em Roboto'),
+                     // document.fonts.load('400 1em Roboto'),
+                     // document.fonts.load('500 1em Roboto'),
+                     // document.fonts.load('700 1em Roboto')
+                 ]).then(() => {
+                     document.documentElement.classList.add('fonts-loaded');
+                     console.log('Fonts loaded.');
+                 }).catch(err => {
+                     console.error('Font loading error:', err);
+                 });
+             }
+
+            // インタラクティブ要素のプリフェッチ（UX向上）
+            // マウスホバー時など、よりインタラクションに近いタイミングで実行する方が効率的
+            function prefetchResources() {
+                const prefetchLinks = ['/checkout', '/cart/add']; // 実際のAPIエンドポイントやページパス
+                prefetchLinks.forEach(url => {
+                    // 既存のprefetchリンクがないか確認
+                    if (!document.querySelector(`link[rel="prefetch"][href="${url}"]`)) {
+                        const link = document.createElement('link');
+                        link.rel = 'prefetch';
+                        link.href = url;
+                        document.head.appendChild(link);
+                         console.log(`Prefetching ${url}`);
+                    }
+                });
+            }
+            // 例: 購入ボタンにマウスが乗ったらcheckoutをプリフェッチ
+            const purchaseBtn = $('#cta_purchase');
+             if (purchaseBtn) {
+                purchaseBtn.addEventListener('mouseover', () => prefetchResources(), { once: true });
+             }
+
+        })();
     </script>
 </body>
 </html>
