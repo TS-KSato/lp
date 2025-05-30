@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ジャンボ宝くじ当選チャレンジ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #007bff;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        .description {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        #winning-number-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+            background-color: #e9f5ee;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            border: 1px dashed #28a745;
+        }
+
+        #stage {
+            position: relative;
+            width: 80%;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 10px 0;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            border: 2px solid #ced4da;
+        }
+
+        .level {
+            height: 50px;
+            margin: 10px auto;
+            background-color: #fff;
+            border: 1px solid #adb5bd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px; /* 穴の幅 */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .level .digit {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        #ball {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #ff4136; /* 赤い球 */
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -15px; /* 初期位置はステージの上 */
+            transition: top 0.5s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        #start-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        #start-button:hover {
+            background-color: #0056b3;
+        }
+        
+        #start-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #result-display {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-top: 25px;
+            min-height: 30px; /* 結果表示エリアの高さ確保 */
+        }
+
+        .result-clear {
+            color: #28a745; /* 緑 */
+        }
+
+        .result-gameover {
+            color: #dc3545; /* 赤 */
+        }
+
+        /* スマートフォン対応 */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            #winning-number-display {
+                font-size: 1.2em;
+            }
+            #stage {
+                width: 90%;
+            }
+            .level {
+                height: 45px;
+                width: 55px;
+            }
+            .level .digit {
+                font-size: 1.5em;
+            }
+            #ball {
+                width: 25px;
+                height: 25px;
+            }
+            #start-button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+            #result-display {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ジャンボ宝くじ当選チャレンジ</h1>
+        <p class="description">スタートボタンを押して、球が当選番号の穴を通過できるか挑戦しよう！</p>
+
+        <div id="winning-number-display">-- --- --</div>
+
+        <div id="stage">
+            <div id="ball"></div>
+            <div class="level" data-level-index="0"><span class="digit">?</span></div>
+            <div class="level" data-level-index="1"><span class="digit">?</span></div>
+            <div class="level" data-level-index="2"><span class="digit">?</span></div>
+            <div class="level" data-level-index="3"><span class="digit">?</span></div>
+            <div class="level" data-level-index="4"><span class="digit">?</span></div>
+        </div>
+
+        <button id="start-button">スタート</button>
+        <div id="result-display"></div>
+    </div>
+
+    <script>
+        const winningNumbersData = [
+            '123-101234',
+            '456-112233',
+            '789-105678',
+            '012-203040',
+            '345-334455',
+            '678-500600',
+            '901-707070'
+        ];
+
+        let currentWinningNumber = '';
+        let currentWinningDigits = []; // 画面に表示されるべき5桁の数字
+        let gameInProgress = false;
+        let currentLevelIndex = 0;
+
+        const winningNumberDisplay = document.getElementById('winning-number-display');
+        const stageElement = document.getElementById('stage');
+        const ballElement = document.getElementById('ball');
+        const levelElements = document.querySelectorAll('.level');
+        const startButton = document.getElementById('start-button');
+        const resultDisplay = document.getElementById('result-display');
+
+        function selectAndDisplayWinningNumber() {
+            const randomIndex = Math.floor(Math.random() * winningNumbersData.length);
+            currentWinningNumber = winningNumbersData[randomIndex];
+            winningNumberDisplay.textContent = currentWinningNumber;
+            
+            // 当選番号から各段の数字を抽出
+            // 例: 123-101234 -> [1, 2, 3, 1, 0]
+            const parts = currentWinningNumber.split('-');
+            const group = parts[0]; // "123"
+            const number = parts[1]; // "101234"
+
+            currentWinningDigits = [
+                group[0], // 組1桁目
+                group[1], // 組2桁目
+                group[2], // 組3桁目
+                number[0], // 番号1桁目
+                number[1]  // 番号2桁目
+            ];
+        }
+
+        function setupStage() {
+            levelElements.forEach((level, index) => {
+                const digitSpan = level.querySelector('.digit');
+                if (currentWinningDigits[index]) {
+                    digitSpan.textContent = currentWinningDigits[index];
+                } else {
+                    digitSpan.textContent = '?'; // データ不足の場合
+                }
+            });
+        }
+
+        function resetBallPosition() {
+            // ステージの上端、中央にボールを配置
+            const stageRect = stageElement.getBoundingClientRect();
+            const ballRect = ballElement.getBoundingClientRect();
+            // 初期位置は最初の穴の少し上
+             ballElement.style.top = (levelElements[0].offsetTop - ballRect.height/2 - 10) + 'px';
+        }
+        
+        function initializeGame() {
+            gameInProgress = false;
+            currentLevelIndex = 0;
+            selectAndDisplayWinningNumber();
+            setupStage();
+            resetBallPosition();
+            resultDisplay.textContent = '';
+            resultDisplay.className = ''; // クラスもリセット
+            startButton.disabled = false;
+            startButton.textContent = 'スタート';
+        }
+
+        function dropBallToNextLevel() {
+            if (currentLevelIndex >= levelElements.length) {
+                // 全段クリア
+                endGame(true);
+                return;
+            }
+
+            const targetLevel = levelElements[currentLevelIndex];
+            const targetDigit = targetLevel.querySelector('.digit').textContent;
+            
+            // ボールをレベルの中央に移動
+            const levelRect = targetLevel.getBoundingClientRect();
+            const stageRect = stageElement.getBoundingClientRect();
+            const ballRect = ballElement.getBoundingClientRect();
+
+            const targetTop = targetLevel.offsetTop + (targetLevel.offsetHeight / 2) - (ballRect.height / 2);
+            ballElement.style.top = targetTop + 'px';
+
+            // アニメーション完了を待つ (CSSのtransition時間と合わせる)
+            setTimeout(() => {
+                // 判定ロジック (このゲームでは必ず一致するが、仕様に合わせて記載)
+                // 今回の仕様では、表示されている数字が当選番号の該当桁そのものなので、必ず一致
+                // もし各段にランダムな数字を表示するなら、ここで `targetDigit === currentWinningDigits[currentLevelIndex]` のような判定が必要
+                
+                // 実際の宝くじでは、ユーザーが選択するわけではないので、このゲームの球は常に「正しい穴」を通る
+                // そのため、不一致でゲームオーバーになるのは、この仕様ではありえない。
+                // ただし、将来的に「複数の穴があり、間違った穴に入るとゲームオーバー」のような拡張をするなら判定が必要。
+                // ここでは、仕様通り「表示されている数字が当選番号の該当桁と一致するか」を形式的に確認
+                if (targetDigit === currentWinningDigits[currentLevelIndex]) {
+                    currentLevelIndex++;
+                    dropBallToNextLevel(); // 次の段へ
+                } else {
+                    // このシナリオは現在の仕様では発生しない
+                    endGame(false); 
+                }
+            }, 600); // CSSのtransition時間0.5sより少し長め
+        }
+
+        function startGame() {
+            if (gameInProgress) return;
+            gameInProgress = true;
+            
+            // リトライの場合、新しい番号を選択してステージを再設定
+            if (startButton.textContent === 'リトライ') {
+                initializeGame(); // これで番号再選択とステージ再設定が行われる
+            }
+            
+            startButton.disabled = true;
+            resultDisplay.textContent = '';
+            resultDisplay.className = '';
+            currentLevelIndex = 0; // リセット
+            
+            // 最初のボール位置を確定
+            resetBallPosition(); 
+            
+            // 少し遅延させてから最初の落下を開始
+            setTimeout(() => {
+                dropBallToNextLevel();
+            }, 100);
+        }
+
+        function endGame(isClear) {
+            gameInProgress = false;
+            startButton.disabled = false;
+            startButton.textContent = 'リトライ';
+
+            if (isClear) {
+                resultDisplay.textContent = 'クリア（当選）！';
+                resultDisplay.className = 'result-clear';
+            } else {
+                resultDisplay.textContent = 'ゲームオーバー';
+                resultDisplay.className = 'result-gameover';
+            }
+        }
+
+        // イベントリスナー
+        startButton.addEventListener('click', startGame);
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', initializeGame);
+    </script>
+</body>
+</html>
