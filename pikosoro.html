@@ -3,1369 +3,1008 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#1a1a2e">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>ピコそろ - 指先で感じる計算の美学</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>ピコそろ - Professional Abacus Calculator</title>
   
   <style>
-    /* リセット & 基本設定 */
+    /* システムフォント優先、美しいタイポグラフィ */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
     }
 
     :root {
-      --primary-bg: #0a0a0f;
-      --secondary-bg: #1a1a2e;
-      --accent-gold: #ffd700;
-      --accent-red: #ff4757;
+      /* 洗練されたモノクロームパレット */
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-tertiary: #141414;
       --text-primary: #ffffff;
-      --text-secondary: #b8b8b8;
-      --safe-area-top: env(safe-area-inset-top);
-      --safe-area-bottom: env(safe-area-inset-bottom);
+      --text-secondary: #8e8e93;
+      --text-tertiary: #48484a;
+      --accent: #007aff;
+      --success: #34c759;
+      --warning: #ff9500;
+      --danger: #ff3b30;
+      --border: #1c1c1e;
+      --shadow: rgba(0, 0, 0, 0.8);
+      
+      /* セーフエリア */
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+      
+      /* タイポグラフィ */
+      --font-system: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Meiryo UI", sans-serif;
+      --font-mono: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
-      background: var(--primary-bg);
+      font-family: var(--font-system);
+      background: var(--bg-primary);
       color: var(--text-primary);
-      height: 100vh; /* For older browsers */
-      height: calc(var(--vh, 1vh) * 100); /* Dynamic viewport height */
+      height: 100vh;
       overflow: hidden;
       position: fixed;
       width: 100%;
       user-select: none;
       -webkit-font-smoothing: antialiased;
-    }
-
-    /* スキップリンク（アクセシビリティ） */
-    .skip-link {
-      position: absolute;
-      top: -40px;
-      left: 0;
-      background: var(--accent-gold);
-      color: var(--primary-bg);
-      padding: 8px;
-      text-decoration: none;
-      border-radius: 0 0 8px 0;
-      z-index: 9999;
-    }
-
-    .skip-link:focus {
-      top: 0;
-    }
-
-    /* ローディング画面 */
-    .loading-screen {
-      position: fixed;
-      inset: 0;
-      background: var(--primary-bg);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9998;
-      transition: opacity 0.5s ease;
-    }
-
-    .loading-screen.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loading-spinner {
-      width: 60px;
-      height: 60px;
-      border: 3px solid rgba(255, 215, 0, 0.3);
-      border-top-color: var(--accent-gold);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* メインコンテナ */
-    .app-container {
-      height: 100%; /* Changed from 100vh to use dynamic --vh */
+    .app {
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-top: var(--safe-area-top);
-      position: relative;
-      background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 100%);
+      padding-top: var(--safe-top);
     }
 
-    /* ヘッダー */
-    .app-header {
-      padding: 16px 20px;
-      text-align: center;
-      position: relative;
-      z-index: 10;
-    }
-
-    .app-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--accent-gold), #ff6b6b);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: 0.05em;
-    }
-
-    /* 算盤セクション（上部） */
-    .abacus-section {
-      flex: 1;
-      padding: 20px;
+    /* ヘッダー - 極めてシンプル */
+    .header {
+      padding: 12px 20px 8px;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .abacus-container {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(20px);
-      border-radius: 24px;
-      padding: 20px;
-      box-shadow: 
-        0 10px 40px rgba(0, 0, 0, 0.3),
-        inset 0 1px 1px rgba(255, 255, 255, 0.1);
-      transform-style: preserve-3d;
-      perspective: 1000px;
+    .header__title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
-    .abacus-frame {
-      position: relative;
-      height: 280px;
-      margin: 0 auto;
-      max-width: 360px;
-    }
-
-    .abacus-rods {
+    .header__actions {
       display: flex;
-      justify-content: space-evenly;
-      height: 100%;
-      position: relative;
+      gap: 16px;
     }
 
-    .abacus-rod {
-      width: 60px;
-      position: relative;
-      transform-style: preserve-3d;
-    }
-
-    .rod-pillar {
-      position: absolute;
-      width: 6px;
-      height: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(to right, #4a4a4a, #6a6a6a, #4a4a4a);
-      border-radius: 3px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    }
-
-    .abacus-divider {
-      position: absolute;
-      width: 100%;
-      height: 6px;
-      background: linear-gradient(to bottom, #8b6914, #654321);
-      top: 30%; /* This defines the separation line */
-      left: 0;
-      z-index: 5;
-      border-radius: 3px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    }
-
-    .abacus-bead {
-      position: absolute;
-      width: 50px;
-      height: 35px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-radius: 50%;
+    .header__button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 4px;
       cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform-style: preserve-3d;
+      transition: opacity 0.2s ease;
     }
 
-    .abacus-bead::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: radial-gradient(ellipse at 30% 30%, 
-        rgba(255, 255, 255, 0.8), 
-        rgba(255, 215, 0, 0.8) 30%, 
-        rgba(184, 134, 11, 0.9) 80%);
-      box-shadow: 
-        inset -5px -5px 10px rgba(0, 0, 0, 0.3),
-        inset 5px 5px 10px rgba(255, 255, 255, 0.3),
-        0 8px 16px rgba(0, 0, 0, 0.4);
+    .header__button:active {
+      opacity: 0.6;
     }
 
-    .abacus-bead.heaven {
-      /* Initial position above divider */
-      top: 15%; 
+    /* 算盤セクション */
+    .abacus {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      min-height: 0;
     }
 
-    .abacus-bead.heaven.active {
-      /* Moved down, towards/past divider */
-      transform: translateX(-50%) translateY(60px); 
+    .abacus__display {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border);
     }
 
-    /* --- MODIFIED CSS for Earth Beads --- */
-    /* Default initial position for earth beads (below divider) */
-    /* This default is not strictly needed if all data-index are styled */
-    /* .abacus-bead.earth { bottom: 15%; } */
-
-    /* data-index="0" is the earth bead closest to the divider (top-most earth bead) */
-    /* data-index="3" is the earth bead furthest from the divider (bottom-most earth bead) */
-    .abacus-bead.earth[data-index="0"] { bottom: 54%; } /* Initial position for index 0 */
-    .abacus-bead.earth[data-index="1"] { bottom: 41%; } /* Initial position for index 1 */
-    .abacus-bead.earth[data-index="2"] { bottom: 28%; } /* Initial position for index 2 */
-    .abacus-bead.earth[data-index="3"] { bottom: 15%; } /* Initial position for index 3 */
-    /* --- END OF MODIFIED CSS --- */
-    
-    .abacus-bead.earth.active {
-      /* Moved up, towards/past divider */
-      transform: translateX(-50%) translateY(-60px); /* Adjusted Y translation for earth beads */
+    .abacus__value {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
     }
 
-    .abacus-bead.moving {
-      animation: bead-bounce 0.5s ease;
-    }
-
-    @keyframes bead-bounce {
-      0%, 100% { transform: translateX(-50%) scale(1); }
-      50% { transform: translateX(-50%) scale(1.1); }
-    }
-    
-    /* Ensure active beads maintain their transform when bouncing */
-    .abacus-bead.heaven.active.moving {
-        animation: bead-bounce-heaven-active 0.5s ease;
-    }
-    @keyframes bead-bounce-heaven-active {
-      0%, 100% { transform: translateX(-50%) translateY(60px) scale(1); }
-      50% { transform: translateX(-50%) translateY(60px) scale(1.1); }
-    }
-    .abacus-bead.earth.active.moving {
-        animation: bead-bounce-earth-active 0.5s ease;
-    }
-    @keyframes bead-bounce-earth-active {
-      0%, 100% { transform: translateX(-50%) translateY(-60px) scale(1); }
-      50% { transform: translateX(-50%) translateY(-60px) scale(1.1); }
-    }
-
-
-    .digit-label {
-      position: absolute;
-      bottom: -35px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 0.875rem;
+    .abacus__label {
+      font-size: 13px;
       color: var(--text-secondary);
       font-weight: 500;
     }
 
-    /* 計算結果表示 */
-    .result-display {
-      background: rgba(0, 0, 0, 0.6);
+    /* 算盤フレーム */
+    .abacus__frame {
+      flex: 1;
+      background: var(--bg-secondary);
       border-radius: 16px;
-      padding: 16px 24px;
-      margin: 20px;
-      text-align: right;
-      font-family: 'SF Mono', 'Monaco', monospace;
-      font-size: 2rem;
-      color: var(--accent-gold);
-      min-height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      box-shadow: 
-        inset 0 2px 8px rgba(0, 0, 0, 0.8),
-        0 1px 1px rgba(255, 255, 255, 0.1);
+      padding: 20px 16px;
       position: relative;
-      overflow: hidden;
-      word-break: break-all; /* For "Error" message */
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
     }
 
-    .result-display::before {
-      content: '';
+    .abacus__container {
+      height: 100%;
+      min-width: 600px;
+      position: relative;
+    }
+
+    .abacus__rods {
+      display: flex;
+      height: 100%;
+      gap: 8px;
+      padding: 0 8px;
+    }
+
+    .abacus__rod {
+      flex: 1;
+      position: relative;
+      min-width: 64px;
+    }
+
+    .abacus__rod-line {
       position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: linear-gradient(45deg, transparent, var(--accent-gold), transparent);
-      opacity: 0;
-      z-index: -1;
-      transition: opacity 0.3s ease;
-    }
-
-    .result-display.calculating::before {
+      width: 2px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text-tertiary);
       opacity: 0.3;
-      animation: glow-sweep 1s linear infinite;
     }
 
-    @keyframes glow-sweep {
-      to { transform: translateX(100%); }
+    .abacus__divider {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: var(--text-tertiary);
+      top: 35%;
+      left: 0;
+      opacity: 0.5;
     }
 
-    /* 電卓セクション（下部） */
-    .calculator-section {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(20px);
-      border-radius: 32px 32px 0 0;
-      padding: 24px 20px calc(var(--safe-area-bottom) + 20px);
-      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    /* 珠のスタイル - シンプルで美しい */
+    .bead {
+      position: absolute;
+      width: 48px;
+      height: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f5f5f7 0%, #d1d1d6 100%);
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px var(--shadow);
     }
 
-    .calculator-grid {
+    .bead--heaven {
+      top: 15%;
+      background: linear-gradient(135deg, #ff9500 0%, #ff7a00 100%);
+    }
+
+    .bead--heaven.active {
+      transform: translateX(-50%) translateY(60px);
+    }
+
+    .bead--earth {
+      background: linear-gradient(135deg, #007aff 0%, #0051d5 100%);
+    }
+
+    .bead--earth:nth-child(3) { bottom: 55%; }
+    .bead--earth:nth-child(4) { bottom: 44%; }
+    .bead--earth:nth-child(5) { bottom: 33%; }
+    .bead--earth:nth-child(6) { bottom: 22%; }
+    .bead--earth:nth-child(7) { bottom: 11%; }
+
+    .bead--earth.active {
+      transform: translateX(-50%) translateY(-80px);
+    }
+
+    /* 桁ラベル */
+    .rod__label {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* 電卓セクション */
+    .calculator {
+      background: var(--bg-secondary);
+      border-radius: 24px 24px 0 0;
+      padding: 20px 16px calc(var(--safe-bottom) + 16px);
+      box-shadow: 0 -4px 24px var(--shadow);
+      border-top: 1px solid var(--border);
+    }
+
+    /* 電卓ディスプレイ */
+    .calculator__display {
+      background: var(--bg-primary);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 64px;
+      border: 1px solid var(--border);
+    }
+
+    .calculator__expression {
+      font-size: 14px;
+      color: var(--text-secondary);
+      min-height: 20px;
+      font-family: var(--font-mono);
+    }
+
+    .calculator__value {
+      font-size: 36px;
+      font-weight: 300;
+      font-family: var(--font-mono);
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    /* 電卓ボタングリッド */
+    .calculator__grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      max-width: 400px;
-      margin: 0 auto;
+      gap: 8px;
     }
 
-    .calc-button {
-      aspect-ratio: 1;
+    /* ボタンスタイル - Appleライク */
+    .btn {
+      aspect-ratio: 1.3;
       border: none;
-      border-radius: 20px;
-      font-size: 1.5rem;
-      font-weight: 600;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 500;
       color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
+      background: var(--bg-tertiary);
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: all 0.2s ease;
-      min-height: 60px;
+      transition: all 0.15s ease;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 2px;
+      min-height: 56px;
     }
 
-    .calc-button::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, transparent, rgba(255, 255, 255, 0.1));
-      opacity: 0;
-      transition: opacity 0.3s ease;
+    .btn__number {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1;
     }
 
-    .calc-button:active {
-      transform: scale(0.95);
-    }
-
-    .calc-button:active::before {
-      opacity: 1;
-    }
-
-    .calc-button.operator {
-      background: rgba(255, 107, 107, 0.2);
-      color: #ff6b6b;
-    }
-
-    .calc-button.equals {
-      background: linear-gradient(135deg, var(--accent-gold), #ff6b6b);
-      grid-column: span 2;
-      color: var(--primary-bg);
-      font-weight: 700;
-    }
-
-    .calc-button.clear {
-      background: rgba(52, 152, 219, 0.2);
-      color: #3498db;
-    }
-
-    /* 振動フィードバック用クラス */
-    .vibrate {
-      animation: vibrate 0.1s linear;
-    }
-
-    @keyframes vibrate {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-1px); }
-      75% { transform: translateX(1px); }
-    }
-
-    /* パーティクル効果 */
-    .particle {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: var(--accent-gold);
-      border-radius: 50%;
-      pointer-events: none;
-      animation: particle-float 1s ease-out forwards;
-    }
-
-    @keyframes particle-float {
-      0% {
-        opacity: 1;
-        transform: translate(0, 0) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translate(var(--tx), var(--ty)) scale(0);
-      }
-    }
-
-    /* チュートリアルオーバーレイ */
-    .tutorial-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.9);
-      z-index: 1000;
-      display: none; /* Initially hidden */
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .tutorial-overlay.active {
-      display: flex; /* Show when active */
-    }
-
-    .tutorial-content {
-      background: var(--secondary-bg);
-      border-radius: 24px;
-      padding: 32px 24px;
-      max-width: 320px;
-      text-align: center;
-      animation: slideUp 0.3s ease;
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .tutorial-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent-gold);
-      margin-bottom: 16px;
-    }
-
-    .tutorial-text {
+    .btn__sub {
+      font-size: 10px;
       color: var(--text-secondary);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .tutorial-button {
-      background: linear-gradient(135deg, var(--accent-gold), #ff6b6b);
-      color: var(--primary-bg);
-      border: none;
-      border-radius: 16px;
-      padding: 14px 32px;
-      font-size: 1rem;
       font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s ease;
+      letter-spacing: 0.05em;
     }
 
-    .tutorial-button:active {
-      transform: scale(0.95);
+    .btn:active {
+      transform: scale(0.98);
+      background: var(--border);
     }
 
-    /* アクセシビリティ：フォーカス表示 */
-    *:focus-visible { /* Changed from :focus to :focus-visible for better UX */
-      outline: 3px solid var(--accent-gold);
-      outline-offset: 2px;
+    /* ボタンタイプ別スタイル */
+    .btn--number {
+      background: #1c1c1e;
     }
 
-    /* アクセシビリティ：高コントラストモード */
-    @media (prefers-contrast: high) {
-      :root {
-        --primary-bg: #000000;
-        --secondary-bg: #1a1a1a;
-        --text-primary: #ffffff;
-        --text-secondary: #e0e0e0;
-      }
-      
-      .calc-button {
-        border: 2px solid var(--text-primary);
-      }
+    .btn--operator {
+      background: var(--accent);
+      color: white;
     }
 
-    /* アクセシビリティ：モーション低減 */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-      }
+    .btn--operator:active {
+      background: #0051d5;
     }
 
-    /* 横向き対応 */
-    @media (orientation: landscape) and (max-height: 500px) {
-      .app-header {
-        padding: 8px 20px;
-      }
-      
-      .app-title {
-        font-size: 1.2rem;
-      }
-      
-      .abacus-section {
-        padding: 10px;
-      }
-      
-      .abacus-frame {
-        height: 200px; /* Adjust abacus height for landscape */
-      }
-       /* Adjust bead movement for smaller abacus */
-      .abacus-bead.heaven.active { transform: translateX(-50%) translateY(40px); }
-      .abacus-bead.earth.active { transform: translateX(-50%) translateY(-40px); }
-
-
-      .calculator-section {
-        padding: 16px 20px;
-      }
-      
-      .calc-button {
-        min-height: 48px;
-        font-size: 1.2rem;
-      }
+    .btn--equals {
+      background: var(--success);
+      color: white;
     }
 
-    /* アニメーション設定パネル */
-    .settings-panel {
+    .btn--equals:active {
+      background: #248a3d;
+    }
+
+    .btn--clear {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn--memory {
+      background: var(--warning);
+      color: white;
+      font-size: 16px;
+    }
+
+    /* 履歴パネル */
+    .history {
       position: fixed;
-      top: 60px; /* Adjust based on header/safe area */
-      right: 20px;
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(20px);
-      border-radius: 16px;
-      padding: 16px;
-      transform: translateX(120%);
-      transition: transform 0.3s ease;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 280px;
+      background: var(--bg-secondary);
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 100;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 24px var(--shadow);
     }
 
-    .settings-panel.active {
+    .history.active {
       transform: translateX(0);
     }
 
-    .settings-button {
-      position: fixed;
-      top: 16px; /* Adjusted for consistency with safe-area */
-      right: 20px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: var(--text-primary);
-      font-size: 1.5rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 101; /* Ensure above settings panel when closed */
-    }
-     /* Ensure settings panel is below button when transitioning */
-    .settings-panel { z-index: 100; }
-
-
-    /* PWAインストールプロンプト */
-    .install-prompt {
-      position: fixed;
-      bottom: calc(var(--safe-area-bottom) + 80px);
-      left: 20px;
-      right: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px);
-      border-radius: 16px;
+    .history__header {
       padding: 16px;
-      display: none; /* Initially hidden */
-      animation: slideUp 0.3s ease;
-      z-index: 90;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .install-prompt.show {
-      display: block; /* Show when class is added */
+    .history__title {
+      font-size: 17px;
+      font-weight: 600;
     }
 
-    /* サウンドインジケーター */
-    .sound-indicator {
-      position: fixed;
-      top: 16px; /* Adjusted for consistency */
-      left: 20px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
+    .history__close {
+      background: none;
       border: none;
-      color: var(--text-primary);
-      font-size: 1.2rem;
+      color: var(--text-secondary);
+      font-size: 24px;
       cursor: pointer;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 101;
+      border-radius: 8px;
     }
 
-    .sound-indicator.muted {
+    .history__close:active {
+      background: var(--bg-tertiary);
+    }
+
+    .history__content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .history__item {
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--bg-tertiary);
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .history__item:active {
+      background: var(--border);
+    }
+
+    .history__expression {
+      font-size: 12px;
       color: var(--text-secondary);
+      margin-bottom: 4px;
     }
 
+    .history__result {
+      font-size: 18px;
+      color: var(--text-primary);
+    }
+
+    /* オーバーレイ */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 99;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* レスポンシブ調整 */
+    @media (max-width: 375px) {
+      .btn {
+        font-size: 18px;
+        min-height: 48px;
+      }
+      
+      .btn__number {
+        font-size: 20px;
+      }
+      
+      .calculator__value {
+        font-size: 32px;
+      }
+    }
+
+    /* アクセシビリティ */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* フォーカス表示 */
+    *:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
-  <!-- スキップリンク -->
-  <a href="#calculator" class="skip-link">電卓へスキップ</a>
-
-  <!-- ローディング画面 -->
-  <div class="loading-screen" role="status" aria-live="assertive" aria-label="読み込み中">
-    <div class="loading-spinner"></div>
-  </div>
-
-  <!-- メインアプリ -->
-  <main class="app-container" role="main">
+  <div class="app">
     <!-- ヘッダー -->
-    <header class="app-header" role="banner">
-      <h1 class="app-title">ピコそろ電卓</h1> <!-- Title slightly adjusted for branding -->
+    <header class="header">
+      <h1 class="header__title">算盤電卓 Pro</h1>
+      <div class="header__actions">
+        <button class="header__button" id="historyBtn" aria-label="履歴を表示">履歴</button>
+      </div>
     </header>
 
-    <!-- サウンドインジケーター -->
-    <button class="sound-indicator" id="soundToggle" aria-label="サウンドのオン・オフ" aria-pressed="true">
-      <span aria-hidden="true">🔊</span>
-    </button>
-
-    <!-- 設定ボタン -->
-    <button class="settings-button" id="settingsButton" aria-label="設定を開く" aria-expanded="false" aria-controls="settingsPanel">
-      <span aria-hidden="true">⚙️</span>
-    </button>
-
-    <!-- 設定パネル -->
-    <aside class="settings-panel" id="settingsPanel" role="complementary" aria-label="設定" hidden>
-      <h2 style="font-size: 1rem; margin-bottom: 12px;" id="settingsPanelTitle">設定</h2>
-      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-        <input type="checkbox" id="hapticToggle" checked>
-        <span>振動フィードバック</span>
-      </label>
-      <label style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="particleToggle" checked>
-        <span>パーティクル効果</span>
-      </label>
-    </aside>
-
     <!-- 算盤セクション -->
-    <section class="abacus-section" aria-label="算盤">
-      <div class="abacus-container">
-        <div class="abacus-frame" role="img" aria-label="5桁の算盤">
-          <div class="abacus-rods" id="abacusRods">
-            <!-- Divider is part of the frame, not dynamically added to rods -->
-            <div class="abacus-divider" aria-hidden="true"></div>
-          </div>
+    <section class="abacus" aria-label="算盤">
+      <div class="abacus__display">
+        <div>
+          <div class="abacus__label">現在値</div>
+          <div class="abacus__value" id="abacusValue">0</div>
         </div>
       </div>
       
-      <!-- 計算結果表示 -->
-      <div class="result-display" id="display" role="status" aria-live="polite" aria-atomic="true">
-        0
+      <div class="abacus__frame">
+        <div class="abacus__container">
+          <div class="abacus__rods" id="abacusRods">
+            <div class="abacus__divider"></div>
+            <!-- 動的に生成 -->
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- 電卓セクション -->
-    <section class="calculator-section" id="calculator" aria-label="電卓">
-      <div class="calculator-grid">
-        <button class="calc-button clear" data-action="clear" aria-label="クリア">C</button>
-        <button class="calc-button operator" data-action="backspace" aria-label="バックスペース">BS</button> <!-- Added Backspace -->
-        <button class="calc-button operator" data-action="percent" aria-label="パーセント">%</button> <!-- Added Percent -->
-        <button class="calc-button operator" data-action="operator" data-value="÷" aria-label="割る">÷</button>
+    <section class="calculator" aria-label="電卓">
+      <div class="calculator__display">
+        <div class="calculator__expression" id="expression"></div>
+        <div class="calculator__value" id="display">0</div>
+      </div>
+      
+      <div class="calculator__grid">
+        <!-- 1行目 -->
+        <button class="btn btn--clear" data-action="clear">
+          <span class="btn__number">C</span>
+        </button>
+        <button class="btn btn--memory" data-action="memory-clear">MC</button>
+        <button class="btn btn--memory" data-action="memory-add">M+</button>
+        <button class="btn btn--memory" data-action="memory-recall">MR</button>
         
-        <button class="calc-button" data-action="number" data-value="7" aria-label="7">7</button>
-        <button class="calc-button" data-action="number" data-value="8" aria-label="8">8</button>
-        <button class="calc-button" data-action="number" data-value="9" aria-label="9">9</button>
-        <button class="calc-button operator" data-action="operator" data-value="×" aria-label="掛ける">×</button>
-
-        <button class="calc-button" data-action="number" data-value="4" aria-label="4">4</button>
-        <button class="calc-button" data-action="number" data-value="5" aria-label="5">5</button>
-        <button class="calc-button" data-action="number" data-value="6" aria-label="6">6</button>
-        <button class="calc-button operator" data-action="operator" data-value="-" aria-label="引く">-</button>
-
-        <button class="calc-button" data-action="number" data-value="1" aria-label="1">1</button>
-        <button class="calc-button" data-action="number" data-value="2" aria-label="2">2</button>
-        <button class="calc-button" data-action="number" data-value="3" aria-label="3">3</button>
-        <button class="calc-button operator" data-action="operator" data-value="+" aria-label="足す">+</button>
+        <!-- 2行目 -->
+        <button class="btn btn--number" data-action="number" data-value="7">
+          <span class="btn__number">7</span>
+          <span class="btn__sub">七</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="8">
+          <span class="btn__number">8</span>
+          <span class="btn__sub">八</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="9">
+          <span class="btn__number">9</span>
+          <span class="btn__sub">九</span>
+        </button>
+        <button class="btn btn--operator" data-action="operator" data-value="÷">
+          <span class="btn__number">÷</span>
+        </button>
         
-        <button class="calc-button" data-action="number" data-value="0" aria-label="0" style="grid-column: span 2;">0</button> <!-- Zero button spans 2 columns -->
-        <button class="calc-button" data-action="decimal" data-value="." aria-label="小数点">.</button> <!-- Added Decimal -->
-        <button class="calc-button equals" data-action="equals" aria-label="イコール">=</button>
+        <!-- 3行目 -->
+        <button class="btn btn--number" data-action="number" data-value="4">
+          <span class="btn__number">4</span>
+          <span class="btn__sub">四</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="5">
+          <span class="btn__number">5</span>
+          <span class="btn__sub">五</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="6">
+          <span class="btn__number">6</span>
+          <span class="btn__sub">六</span>
+        </button>
+        <button class="btn btn--operator" data-action="operator" data-value="×">
+          <span class="btn__number">×</span>
+        </button>
+        
+        <!-- 4行目 -->
+        <button class="btn btn--number" data-action="number" data-value="1">
+          <span class="btn__number">1</span>
+          <span class="btn__sub">一</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="2">
+          <span class="btn__number">2</span>
+          <span class="btn__sub">二</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="3">
+          <span class="btn__number">3</span>
+          <span class="btn__sub">三</span>
+        </button>
+        <button class="btn btn--operator" data-action="operator" data-value="-">
+          <span class="btn__number">−</span>
+        </button>
+        
+        <!-- 5行目 -->
+        <button class="btn btn--number" data-action="number" data-value="0">
+          <span class="btn__number">0</span>
+          <span class="btn__sub">零</span>
+        </button>
+        <button class="btn btn--number" data-action="number" data-value="00">
+          <span class="btn__number">00</span>
+        </button>
+        <button class="btn btn--equals" data-action="equals">
+          <span class="btn__number">=</span>
+        </button>
+        <button class="btn btn--operator" data-action="operator" data-value="+">
+          <span class="btn__number">+</span>
+        </button>
       </div>
     </section>
-  </main>
 
-  <!-- チュートリアルオーバーレイ -->
-  <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" aria-describedby="tutorialText" hidden>
-    <div class="tutorial-content">
-      <h2 class="tutorial-title" id="tutorialTitle">ようこそ！</h2>
-      <p class="tutorial-text" id="tutorialText">
-        電卓で計算すると、上の算盤が連動して動きます。<br>
-        珠をタップして直接動かすこともできます。
-      </p>
-      <button class="tutorial-button" id="tutorialClose">はじめる</button>
-    </div>
-  </div>
+    <!-- 履歴パネル -->
+    <aside class="history" id="historyPanel" aria-label="計算履歴">
+      <div class="history__header">
+        <h2 class="history__title">計算履歴</h2>
+        <button class="history__close" id="historyClose" aria-label="履歴を閉じる">×</button>
+      </div>
+      <div class="history__content" id="historyContent">
+        <!-- 動的に生成 -->
+      </div>
+    </aside>
 
-  <!-- PWAインストールプロンプト -->
-  <div class="install-prompt" id="installPrompt" role="alert" hidden>
-    <p style="margin-bottom: 12px;">ホーム画面に追加して、いつでもすぐに使えるようにしましょう！</p>
-    <button class="tutorial-button" id="installButton" style="width: 100%;">インストール</button>
+    <!-- オーバーレイ -->
+    <div class="overlay" id="overlay"></div>
   </div>
 
   <script>
-    // グローバル変数
+    // アプリケーション状態
     const state = {
       displayValue: '0',
+      expression: '',
       firstOperand: null,
       waitingForOperand: false,
       operator: null,
-      soundEnabled: true,
-      hapticEnabled: true,
-      particleEnabled: true,
-      errorState: false, // Added error state
+      memory: 0,
+      history: []
     };
 
-    // オーディオコンテキスト（サウンド用）
-    let audioContext = null;
-
     // DOM要素
-    const display = document.getElementById('display');
-    const abacusRodsContainer = document.getElementById('abacusRods'); // Renamed for clarity
-    const buttons = document.querySelectorAll('.calc-button');
-    const loadingScreen = document.querySelector('.loading-screen');
-    const tutorialOverlay = document.getElementById('tutorialOverlay');
-    const tutorialClose = document.getElementById('tutorialClose');
-    const soundToggle = document.getElementById('soundToggle');
-    const settingsButton = document.getElementById('settingsButton');
-    const settingsPanel = document.getElementById('settingsPanel');
-    const hapticToggle = document.getElementById('hapticToggle');
-    const particleToggle = document.getElementById('particleToggle');
-    const installPromptEl = document.getElementById('installPrompt'); // Renamed to avoid conflict
-    const installButton = document.getElementById('installButton');
-
-    // PWA用変数
-    let deferredPrompt;
-    const MAX_DIGITS = 5; // Max digits for abacus positive numbers
-    const MAX_INPUT_LENGTH = MAX_DIGITS + 1; // For negative sign e.g. -9999 is 5 chars, 99999 is 5 chars
+    const elements = {
+      display: document.getElementById('display'),
+      expression: document.getElementById('expression'),
+      abacusValue: document.getElementById('abacusValue'),
+      abacusRods: document.getElementById('abacusRods'),
+      historyBtn: document.getElementById('historyBtn'),
+      historyPanel: document.getElementById('historyPanel'),
+      historyClose: document.getElementById('historyClose'),
+      historyContent: document.getElementById('historyContent'),
+      overlay: document.getElementById('overlay'),
+      buttons: document.querySelectorAll('.btn')
+    };
 
     // 初期化
     function init() {
-      // Set dynamic viewport height
-      const setVh = () => {
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-      };
-      window.addEventListener('resize', setVh);
-      setVh(); // Initial call
-
-      initializeAbacus();
-      initializeEventListeners();
-      initializeAudio(); // Attempt to initialize early
-      checkFirstVisit();
-      initializePWA();
-      updateDisplay(); // Initial display update
-      
-      setTimeout(() => {
-        loadingScreen.classList.add('hidden');
-        loadingScreen.setAttribute('aria-hidden', 'true'); // Hide from AT
-      }, 500);
+      createAbacus();
+      attachEventListeners();
+      updateDisplay();
     }
 
-    // 算盤の初期化
-    function initializeAbacus() {
-      const positions = ['万', '千', '百', '十', '一']; // Corresponds to 10^4, 10^3, ..., 10^0
+    // 算盤生成（8桁）
+    function createAbacus() {
+      const digits = ['千万', '百万', '十万', '万', '千', '百', '十', '一'];
       
-      for (let i = 0; i < MAX_DIGITS; i++) { // Rods from left (万) to right (一)
+      for (let i = 0; i < 8; i++) {
         const rod = document.createElement('div');
-        rod.className = 'abacus-rod';
-        rod.setAttribute('data-position-index', i); // 0 for 万, 1 for 千, ..., 4 for 一
-        rod.setAttribute('aria-label', `${positions[i]}の位`);
+        rod.className = 'abacus__rod';
+        rod.dataset.position = i;
 
-        const pillar = document.createElement('div');
-        pillar.className = 'rod-pillar';
-        pillar.setAttribute('aria-hidden', 'true');
-        rod.appendChild(pillar);
+        // 縦線
+        const line = document.createElement('div');
+        line.className = 'abacus__rod-line';
+        rod.appendChild(line);
 
+        // 天珠（5の珠）
         const heavenBead = document.createElement('button');
-        heavenBead.className = 'abacus-bead heaven';
-        heavenBead.setAttribute('data-value', '5');
-        heavenBead.setAttribute('data-position-index', i);
-        heavenBead.setAttribute('role', 'button');
-        heavenBead.setAttribute('aria-label', `${positions[i]}の位の5の珠`);
-        heavenBead.setAttribute('aria-pressed', 'false');
-        heavenBead.addEventListener('click', handleBeadClick);
+        heavenBead.className = 'bead bead--heaven';
+        heavenBead.dataset.type = 'heaven';
+        heavenBead.dataset.position = i;
+        heavenBead.setAttribute('aria-label', `${digits[i]}の位の5の珠`);
         rod.appendChild(heavenBead);
 
-        for (let j = 0; j < 4; j++) { // Earth beads, j=0 is top-most, j=3 is bottom-most
+        // 地珠（1の珠）× 4
+        for (let j = 0; j < 4; j++) {
           const earthBead = document.createElement('button');
-          earthBead.className = 'abacus-bead earth';
-          earthBead.setAttribute('data-value', '1');
-          earthBead.setAttribute('data-position-index', i);
-          earthBead.setAttribute('data-index', j); // j=0 (top) to j=3 (bottom)
-          earthBead.setAttribute('role', 'button');
-          earthBead.setAttribute('aria-label', `${positions[i]}の位の${j + 1}番目の1の珠 (上から${j+1}番目)`);
-          earthBead.setAttribute('aria-pressed', 'false');
-          earthBead.addEventListener('click', handleBeadClick);
+          earthBead.className = 'bead bead--earth';
+          earthBead.dataset.type = 'earth';
+          earthBead.dataset.position = i;
+          earthBead.dataset.index = j;
+          earthBead.setAttribute('aria-label', `${digits[i]}の位の${j + 1}番目の珠`);
           rod.appendChild(earthBead);
         }
 
+        // 桁ラベル
         const label = document.createElement('div');
-        label.className = 'digit-label';
-        label.textContent = positions[i];
-        label.setAttribute('aria-hidden', 'true');
+        label.className = 'rod__label';
+        label.textContent = digits[i];
         rod.appendChild(label);
 
-        abacusRodsContainer.appendChild(rod);
+        elements.abacusRods.appendChild(rod);
       }
     }
 
-    // イベントリスナーの初期化
-    function initializeEventListeners() {
-      buttons.forEach(button => {
-        button.addEventListener('click', handleButtonClick);
+    // イベントリスナー設定
+    function attachEventListeners() {
+      // 電卓ボタン
+      elements.buttons.forEach(btn => {
+        btn.addEventListener('click', handleButtonClick);
       });
+
+      // 算盤の珠
+      document.querySelectorAll('.bead').forEach(bead => {
+        bead.addEventListener('click', handleBeadClick);
+      });
+
+      // 履歴
+      elements.historyBtn.addEventListener('click', showHistory);
+      elements.historyClose.addEventListener('click', hideHistory);
+      elements.overlay.addEventListener('click', hideHistory);
+
+      // キーボード
       document.addEventListener('keydown', handleKeyPress);
-      tutorialClose.addEventListener('click', closeTutorial);
-      soundToggle.addEventListener('click', toggleSound);
-      settingsButton.addEventListener('click', toggleSettings);
-      hapticToggle.addEventListener('change', (e) => state.hapticEnabled = e.target.checked);
-      particleToggle.addEventListener('change', (e) => state.particleEnabled = e.target.checked);
-      installButton.addEventListener('click', installPWA);
     }
 
-    // オーディオ初期化 (ユーザーインタラクション後に呼び出されることを推奨)
-    function initializeAudio() {
-      if (audioContext) return;
-      try {
-        if (window.AudioContext || window.webkitAudioContext) {
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-      } catch (e) {
-        console.error("AudioContext not supported or could not be created.", e);
-        state.soundEnabled = false; // Disable sound if context fails
-        soundToggle.classList.add('muted');
-        soundToggle.innerHTML = '<span aria-hidden="true">🔇</span>';
-        soundToggle.disabled = true; // Disable the button
-      }
-    }
-
-    // サウンド再生
-    function playSound(frequency = 440, duration = 50, type = 'sine') {
-      if (!state.soundEnabled || !audioContext) return;
-
-      // Ensure AudioContext is running (it might be suspended initially)
-      if (audioContext.state === 'suspended') {
-        audioContext.resume().catch(err => console.error("AudioContext resume failed:", err));
-      }
-      // If still not running, can't play sound
-      if (audioContext.state !== 'running') return;
-
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.type = type;
-      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Start with some volume
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration / 1000); // Fade out
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration / 1000);
-    }
-    
-    function vibrate(pattern = [10]) {
-      if (state.hapticEnabled && navigator.vibrate) {
-        try {
-          navigator.vibrate(pattern);
-        } catch (e) {
-          // Some browsers might restrict vibrate, e.g. if not from a secure context or a user gesture.
-          console.warn("Vibration failed:", e);
-        }
-      }
-    }
-
-    function createParticle(x, y) {
-      if (!state.particleEnabled) return;
-      const particle = document.createElement('div');
-      particle.className = 'particle';
-      particle.style.left = x + 'px';
-      particle.style.top = y + 'px';
-      particle.style.setProperty('--tx', (Math.random() - 0.5) * 100 + 'px');
-      particle.style.setProperty('--ty', (Math.random() - 0.5) * 100 + 'px');
-      document.body.appendChild(particle);
-      setTimeout(() => particle.remove(), 1000);
-    }
-
+    // ボタンクリック処理
     function handleButtonClick(e) {
-      // Initialize audio on first user interaction if not already done
-      if (!audioContext && state.soundEnabled) initializeAudio();
-
-      const button = e.currentTarget;
-      const { action, value } = button.dataset;
-      const rect = button.getBoundingClientRect();
-      
-      vibrate();
-      playSound(action === 'number' ? 300 : (action === 'clear' || action === 'backspace' ? 200 : 400));
-      createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2);
-
-      if (state.errorState && action !== 'clear') {
-        return; // Only allow clear if in error state
-      }
+      const { action, value } = e.currentTarget.dataset;
 
       switch (action) {
-        case 'number': inputDigit(value); break;
-        case 'operator': handleOperator(value); break;
-        case 'equals': calculate(); break;
-        case 'clear': clearAll(); break;
-        case 'backspace': backspace(); break;
-        case 'decimal': inputDecimal(); break;
-        case 'percent': inputPercent(); break;
-        // default: // No default needed
+        case 'number':
+          inputNumber(value);
+          break;
+        case 'operator':
+          inputOperator(value);
+          break;
+        case 'equals':
+          calculate();
+          break;
+        case 'clear':
+          clear();
+          break;
+        case 'memory-clear':
+          state.memory = 0;
+          break;
+        case 'memory-add':
+          state.memory += parseFloat(state.displayValue) || 0;
+          break;
+        case 'memory-recall':
+          state.displayValue = String(state.memory);
+          updateDisplay();
+          break;
+      }
+    }
+
+    // 数字入力
+    function inputNumber(num) {
+      if (state.waitingForOperand) {
+        state.displayValue = num;
+        state.waitingForOperand = false;
+      } else {
+        state.displayValue = state.displayValue === '0' ? num : state.displayValue + num;
+        
+        // 8桁制限
+        if (state.displayValue.length > 8) {
+          state.displayValue = state.displayValue.slice(0, 8);
+        }
       }
       updateDisplay();
     }
 
-    function handleKeyPress(e) {
-      if (!audioContext && state.soundEnabled) initializeAudio();
-      
-      if (state.errorState && e.key !== 'Escape' && e.key.toLowerCase() !== 'c') {
-        return;
-      }
-
-      if (e.key >= '0' && e.key <= '9') { inputDigit(e.key); }
-      else if (e.key === '.') { inputDecimal(); }
-      else if (e.key === '+') { handleOperator('+'); }
-      else if (e.key === '-') { handleOperator('-'); }
-      else if (e.key === '*') { handleOperator('×'); }
-      else if (e.key === '/') { e.preventDefault(); handleOperator('÷'); }
-      else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calculate(); }
-      else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') { clearAll(); }
-      else if (e.key === 'Backspace') { backspace(); }
-      else if (e.key === '%') { inputPercent(); }
-      else { return; } // Don't update display if no relevant key was pressed
-      
-      updateDisplay();
-    }
-
-    function inputDigit(digit) {
-      if (state.waitingForOperand) {
-        state.displayValue = digit;
-        state.waitingForOperand = false;
-      } else {
-        state.displayValue = state.displayValue === '0' ? digit : state.displayValue + digit;
-      }
-      // Limit overall length (numbers + sign + decimal)
-      if (state.displayValue.length > MAX_INPUT_LENGTH + (state.displayValue.includes('.') ? 1 : 0) ) { // Allow one more for decimal
-         state.displayValue = state.displayValue.slice(0, state.displayValue.length -1);
-      }
-    }
-
-    function inputDecimal() {
-      if (state.waitingForOperand) {
-        state.displayValue = '0.';
-        state.waitingForOperand = false;
-        return;
-      }
-      if (!state.displayValue.includes('.')) {
-        state.displayValue += '.';
-      }
-    }
-    
-    function backspace() {
-      if (state.displayValue.length === 1 || (state.displayValue.length === 2 && state.displayValue.startsWith('-'))) {
-        state.displayValue = '0';
-      } else {
-        state.displayValue = state.displayValue.slice(0, -1);
-      }
-    }
-
-    function handleOperator(nextOperator) {
+    // 演算子入力
+    function inputOperator(nextOperator) {
       const inputValue = parseFloat(state.displayValue);
-      if (isNaN(inputValue)) return; // Should not happen if errorState is handled
-
-      if (state.operator && state.waitingForOperand) { // Change operator
-        state.operator = nextOperator;
-        return;
-      }
 
       if (state.firstOperand === null) {
         state.firstOperand = inputValue;
+        state.expression = `${inputValue} ${nextOperator}`;
       } else if (state.operator) {
         const result = performCalculation[state.operator](state.firstOperand, inputValue);
-        if (!isFinite(result) || isNaN(result)) {
-          showError();
-          return;
-        }
-        state.displayValue = formatResult(result);
-        state.firstOperand = parseFloat(state.displayValue); // Use the formatted (and possibly clipped) result
+        state.displayValue = String(result);
+        state.firstOperand = result;
+        state.expression = `${result} ${nextOperator}`;
       }
+
       state.waitingForOperand = true;
       state.operator = nextOperator;
+      updateDisplay();
     }
 
+    // 計算実行
     function calculate() {
-      if (state.firstOperand === null || !state.operator) return;
-      
-      const inputValue = parseFloat(state.displayValue);
-      if (isNaN(inputValue)) { // Should not happen if errorState handled
-          showError();
-          return;
+      if (state.firstOperand !== null && state.operator) {
+        const inputValue = parseFloat(state.displayValue);
+        const result = performCalculation[state.operator](state.firstOperand, inputValue);
+        
+        // 履歴に追加
+        const historyItem = {
+          expression: `${state.firstOperand} ${state.operator} ${inputValue}`,
+          result: result,
+          timestamp: new Date()
+        };
+        state.history.unshift(historyItem);
+        if (state.history.length > 50) state.history.pop();
+        
+        state.displayValue = String(result);
+        state.expression = '';
+        state.firstOperand = null;
+        state.operator = null;
+        state.waitingForOperand = true;
+        
+        updateDisplay();
+        updateHistory();
       }
-
-      const result = performCalculation[state.operator](state.firstOperand, inputValue);
-      
-      if (!isFinite(result) || isNaN(result)) {
-        showError();
-      } else {
-        state.displayValue = formatResult(result);
-        // Calculation effect
-        display.classList.add('calculating');
-        setTimeout(() => display.classList.remove('calculating'), 1000);
-      }
-      state.firstOperand = null;
-      state.operator = null;
-      state.waitingForOperand = true; // Ready for new input, old calculation is done
-    }
-    
-    function formatResult(value) {
-        // Attempt to show some precision for non-integers, then clip/round
-        let resultStr;
-        if (Math.abs(value) < 1e-7 && value !== 0) { // Very small numbers to sci notation or 0
-            resultStr = value.toExponential(2);
-        } else if (!Number.isInteger(value)) {
-            // Limit decimal places, e.g. to fit within display constraints
-            // This is a simple approach, more sophisticated formatting might be needed
-            resultStr = parseFloat(value.toFixed(7)).toString(); 
-        } else {
-            resultStr = String(value);
-        }
-
-        // Now, check length and clip if necessary for display
-        let numValue = parseFloat(resultStr); // Re-parse after potential toFixed
-
-        if (numValue > Math.pow(10, MAX_DIGITS) -1) { // e.g. > 99999
-            numValue = Math.pow(10, MAX_DIGITS) -1;
-        } else if (numValue < -(Math.pow(10, MAX_DIGITS-1) -1) ) { // e.g. < -9999
-            numValue = -(Math.pow(10, MAX_DIGITS-1) -1);
-        }
-        // Final string representation
-        // If it was a float that got rounded to int, remove trailing .0
-        resultStr = String(numValue); 
-        // Abacus works with integers, so result for abacus should be integer part
-        // We can refine this: if resultStr has more chars than MAX_INPUT_LENGTH, it's an issue.
-        if (resultStr.length > MAX_INPUT_LENGTH + (resultStr.includes('.') ? 1 : 0)) {
-            // If still too long (e.g. very long float string even after toFixed), clip or error
-            // For simplicity, clip to integer part's max length
-            if (numValue > 0) resultStr = String(Math.floor(numValue)).slice(0, MAX_DIGITS);
-            else resultStr = String(Math.ceil(numValue)).slice(0, MAX_INPUT_LENGTH);
-        }
-        return resultStr;
     }
 
-
-    function showError() {
-      state.displayValue = 'Error';
-      state.errorState = true;
-      state.firstOperand = null;
-      state.operator = null;
-      state.waitingForOperand = false; // Not waiting for operand, waiting for clear
-      playSound(150, 200, 'square'); // Error sound
-    }
-
+    // 計算処理
     const performCalculation = {
-      '÷': (a, b) => b === 0 ? Infinity : a / b,
+      '÷': (a, b) => Math.floor(a / b),
       '×': (a, b) => a * b,
       '+': (a, b) => a + b,
       '-': (a, b) => a - b,
+      '−': (a, b) => a - b
     };
 
-    function inputPercent() {
-        let currentValue = parseFloat(state.displayValue);
-        if (isNaN(currentValue)) return;
-
-        if (state.firstOperand !== null && state.operator) {
-            // Calculate percentage of the first operand
-            // e.g. 100 + 10% means 100 + (10/100 * 100)
-            // e.g. 100 * 10% means 100 * (10/100)
-            if (state.operator === '+' || state.operator === '-') {
-                 currentValue = state.firstOperand * (currentValue / 100);
-            } else { // for ×, ÷
-                 currentValue = currentValue / 100;
-            }
-        } else {
-            // Just convert current display to percentage
-            currentValue = currentValue / 100;
-        }
-        state.displayValue = formatResult(currentValue);
-        // state.waitingForOperand = true; // Depends on desired behavior after %
-    }
-
-
-    function clearAll() {
+    // クリア
+    function clear() {
       state.displayValue = '0';
+      state.expression = '';
       state.firstOperand = null;
       state.waitingForOperand = false;
       state.operator = null;
-      state.errorState = false;
-      playSound(250, 100, 'sawtooth');
+      updateDisplay();
     }
 
+    // 表示更新
     function updateDisplay() {
-      display.textContent = state.displayValue;
-      // Abacus only shows positive integers up to MAX_DIGITS
-      const valueForAbacus = Math.floor(Math.abs(parseFloat(state.displayValue))) || 0;
-      updateAbacus(valueForAbacus);
-      display.setAttribute('aria-label', `計算結果: ${state.displayValue}`);
+      elements.display.textContent = formatNumber(state.displayValue);
+      elements.expression.textContent = state.expression;
+      
+      const value = Math.floor(Math.abs(parseFloat(state.displayValue))) || 0;
+      elements.abacusValue.textContent = formatNumber(value);
+      updateAbacus(value);
     }
 
+    // 数値フォーマット
+    function formatNumber(num) {
+      const number = parseFloat(num) || 0;
+      return number.toLocaleString('ja-JP');
+    }
+
+    // 算盤更新
     function updateAbacus(value) {
-      document.querySelectorAll('.abacus-bead').forEach(bead => {
-        bead.classList.remove('active', 'moving');
-        bead.setAttribute('aria-pressed', 'false');
+      // 全ての珠をリセット
+      document.querySelectorAll('.bead').forEach(bead => {
+        bead.classList.remove('active');
       });
 
-      if (value > Math.pow(10, MAX_DIGITS) -1 ) value = Math.pow(10, MAX_DIGITS) -1; // Cap for abacus
+      // 8桁に分解
+      const digits = value.toString().padStart(8, '0').split('').map(Number);
 
-      // Convert number to an array of digits, left-padded with '0' to MAX_DIGITS length.
-      // E.g., 123 becomes ['0', '0', '1', '2', '3'] for a 5-digit abacus.
-      const digits = value.toString().padStart(MAX_DIGITS, '0').split('');
-      
-      digits.forEach((digitStr, positionIndex) => { // positionIndex: 0 for 万, 1 for 千, ...
-        const digitValue = parseInt(digitStr);
+      digits.forEach((digit, position) => {
+        // 5以上なら天珠を動かす
+        if (digit >= 5) {
+          const heavenBead = document.querySelector(
+            `.bead--heaven[data-position="${position}"]`
+          );
+          if (heavenBead) {
+            heavenBead.classList.add('active');
+          }
+        }
+
+        // 残りの値で地珠を動かす
+        const earthCount = digit % 5;
+        for (let i = 0; i < earthCount; i++) {
+          const earthBead = document.querySelector(
+            `.bead--earth[data-position="${position}"][data-index="${i}"]`
+          );
+          if (earthBead) {
+            earthBead.classList.add('active');
+          }
+        }
+      });
+    }
+
+    // 珠クリック処理
+    function handleBeadClick(e) {
+      const bead = e.currentTarget;
+      const position = parseInt(bead.dataset.position);
+      const type = bead.dataset.type;
+      const isActive = bead.classList.contains('active');
+
+      // 現在の算盤の値を計算
+      let currentValue = 0;
+      for (let i = 0; i < 8; i++) {
+        let digitValue = 0;
         
+        // 天珠の値
         const heavenBead = document.querySelector(
-          `.abacus-bead.heaven[data-position-index="${positionIndex}"]`
+          `.bead--heaven[data-position="${i}"]`
         );
-        if (digitValue >= 5) {
-          if (heavenBead && !heavenBead.classList.contains('active')) {
-            setTimeout(() => {
-              heavenBead.classList.add('active', 'moving');
-              heavenBead.setAttribute('aria-pressed', 'true');
-              playSound(600, 30);
-            }, positionIndex * 50);
+        if (heavenBead && heavenBead.classList.contains('active')) {
+          digitValue += 5;
+        }
+        
+        // 地珠の値
+        const earthBeads = document.querySelectorAll(
+          `.bead--earth[data-position="${i}"]`
+        );
+        earthBeads.forEach(b => {
+          if (b.classList.contains('active')) {
+            digitValue += 1;
+          }
+        });
+        
+        currentValue += digitValue * Math.pow(10, 7 - i);
+      }
+
+      // クリックされた珠の処理
+      if (type === 'heaven') {
+        if (isActive) {
+          bead.classList.remove('active');
+          currentValue -= 5 * Math.pow(10, 7 - position);
+        } else {
+          bead.classList.add('active');
+          currentValue += 5 * Math.pow(10, 7 - position);
+        }
+      } else {
+        const index = parseInt(bead.dataset.index);
+        const samePositionBeads = document.querySelectorAll(
+          `.bead--earth[data-position="${position}"]`
+        );
+        
+        if (isActive) {
+          // この珠より上の珠も非アクティブに
+          for (let i = index; i < 4; i++) {
+            if (samePositionBeads[i].classList.contains('active')) {
+              samePositionBeads[i].classList.remove('active');
+              currentValue -= Math.pow(10, 7 - position);
+            }
           }
         } else {
-            if (heavenBead && heavenBead.classList.contains('active')) {
-                 setTimeout(() => { // Deactivate if not >= 5
-                    heavenBead.classList.remove('active', 'moving');
-                    heavenBead.setAttribute('aria-pressed', 'false');
-                 }, positionIndex * 50);
+          // この珠より下の珠もアクティブに
+          for (let i = 0; i <= index; i++) {
+            if (!samePositionBeads[i].classList.contains('active')) {
+              samePositionBeads[i].classList.add('active');
+              currentValue += Math.pow(10, 7 - position);
             }
-        }
-
-        const earthValue = digitValue % 5;
-        const earthBeadsInRod = document.querySelectorAll(
-          `.abacus-bead.earth[data-position-index="${positionIndex}"]`
-        );
-        
-        earthBeadsInRod.forEach((earthBead, beadIndexInRod) => { // beadIndexInRod: 0 (top) to 3 (bottom)
-            // Earth beads are active if their index is less than earthValue
-            // (i.e., if beadIndexInRod is 0, 1, ..., earthValue-1)
-            const shouldBeActive = beadIndexInRod < earthValue;
-            if (shouldBeActive && !earthBead.classList.contains('active')) {
-                setTimeout(() => {
-                    earthBead.classList.add('active', 'moving');
-                    earthBead.setAttribute('aria-pressed', 'true');
-                    playSound(400 + beadIndexInRod * 50, 30);
-                }, positionIndex * 50 + (beadIndexInRod + 1) * 30);
-            } else if (!shouldBeActive && earthBead.classList.contains('active')) {
-                 setTimeout(() => { // Deactivate if not needed
-                    earthBead.classList.remove('active', 'moving');
-                    earthBead.setAttribute('aria-pressed', 'false');
-                 }, positionIndex * 50 + (beadIndexInRod + 1) * 30);
-            }
-        });
-      });
-    }
-
-    function handleBeadClick(e) {
-      if (!audioContext && state.soundEnabled) initializeAudio(); // Ensure audio context for direct bead interaction
-      if (state.errorState) return; // No bead interaction in error state
-
-      const bead = e.currentTarget;
-      const positionIndex = parseInt(bead.dataset.positionIndex); // 0 for 万 ... 4 for 一
-      const wasActive = bead.classList.contains('active');
-      
-      vibrate();
-      // Sound pitch depends on whether activating or deactivating
-      playSound(wasActive ? 350 : 550, 40, 'triangle');
-      bead.classList.toggle('active');
-      bead.classList.add('moving'); // Add moving class for animation
-      bead.setAttribute('aria-pressed', String(!wasActive));
-
-      if (bead.classList.contains('earth')) {
-        // Standard abacus behavior for earth beads:
-        // - Clicking an inactive bead to activate it also activates beads below it (further from divider).
-        // - Clicking an active bead to deactivate it also deactivates beads above it (closer to divider).
-        // This means we operate on a "stack" from the clicked bead.
-        // data-index is 0 (top) to 3 (bottom)
-        const clickedEarthBeadIndex = parseInt(bead.dataset.index);
-        const earthBeadsInRod = document.querySelectorAll(
-            `.abacus-bead.earth[data-position-index="${positionIndex}"]`
-        );
-
-        if (!wasActive) { // Bead was off, turned on (move beads up)
-            // All beads from clicked one UP TO THE TOP (index 0) should be activated
-            for (let i = 0; i <= clickedEarthBeadIndex; i++) {
-                if (!earthBeadsInRod[i].classList.contains('active')) {
-                    earthBeadsInRod[i].classList.add('active');
-                    earthBeadsInRod[i].setAttribute('aria-pressed', 'true');
-                }
-            }
-        } else { // Bead was on, turned off (move beads down)
-            // All beads from clicked one DOWN TO THE BOTTOM (index 3) should be deactivated
-            for (let i = clickedEarthBeadIndex; i < 4; i++) {
-                 if (earthBeadsInRod[i].classList.contains('active')) {
-                    earthBeadsInRod[i].classList.remove('active');
-                    earthBeadsInRod[i].setAttribute('aria-pressed', 'false');
-                }
-            }
-        }
-      }
-      
-      // Recalculate displayValue from abacus state
-      let newDisplayValue = 0;
-      for (let i = 0; i < MAX_DIGITS; i++) { // Rod index: 0 (万) to 4 (一)
-        let digitOnRod = 0;
-        const heavenBead = document.querySelector(`.abacus-bead.heaven[data-position-index="${i}"]`);
-        if (heavenBead.classList.contains('active')) {
-          digitOnRod += 5;
-        }
-        const earthBeadsInRod = document.querySelectorAll(`.abacus-bead.earth[data-position-index="${i}"]`);
-        earthBeadsInRod.forEach(eb => {
-          if (eb.classList.contains('active')) {
-            digitOnRod += 1;
           }
-        });
-        newDisplayValue = newDisplayValue * 10 + digitOnRod;
+        }
       }
-      
-      state.displayValue = String(newDisplayValue);
-      // Reset calculator state if abacus is manually changed
+
+      // 値を更新
+      state.displayValue = String(currentValue);
+      state.expression = '';
       state.firstOperand = null;
       state.operator = null;
-      state.waitingForOperand = false; // Start new input if numbers are typed
+      state.waitingForOperand = false;
+      updateDisplay();
+    }
+
+    // キーボード処理
+    function handleKeyPress(e) {
+      if (e.key >= '0' && e.key <= '9') {
+        inputNumber(e.key);
+      } else if (['+', '-', '*', '/'].includes(e.key)) {
+        const keyMap = { '+': '+', '-': '-', '*': '×', '/': '÷' };
+        inputOperator(keyMap[e.key]);
+      } else if (e.key === 'Enter' || e.key === '=') {
+        calculate();
+      } else if (e.key === 'Escape') {
+        clear();
+      }
+    }
+
+    // 履歴表示
+    function showHistory() {
+      elements.historyPanel.classList.add('active');
+      elements.overlay.classList.add('active');
+      updateHistory();
+    }
+
+    // 履歴非表示
+    function hideHistory() {
+      elements.historyPanel.classList.remove('active');
+      elements.overlay.classList.remove('active');
+    }
+
+    // 履歴更新
+    function updateHistory() {
+      elements.historyContent.innerHTML = '';
       
-      updateDisplay(); // This will call updateAbacus again, which is fine, it will simply re-affirm state
-                       // Or, could optimize updateDisplay to not call updateAbacus if called from here.
-    }
-
-
-    function checkFirstVisit() {
-      if (!localStorage.getItem('pikosoroVisited')) { // Changed to localStorage for persistence
-        setTimeout(() => {
-          tutorialOverlay.hidden = false;
-          tutorialOverlay.classList.add('active');
-          localStorage.setItem('pikosoroVisited', 'true');
-        }, 1000);
-      } else {
-        tutorialOverlay.hidden = true; // Ensure it's hidden if already visited
+      if (state.history.length === 0) {
+        elements.historyContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">履歴がありません</p>';
+        return;
       }
-    }
 
-    function closeTutorial() {
-      tutorialOverlay.classList.remove('active');
-      tutorialOverlay.hidden = true;
-      vibrate([50, 50, 50]);
-      // Focus management: return focus to a sensible element, e.g., first calculator button
-      const firstCalcButton = document.querySelector('.calc-button[data-action="clear"]');
-      if (firstCalcButton) firstCalcButton.focus();
-    }
-
-    function toggleSound() {
-      if (!audioContext && !state.soundEnabled) { // If sound was off and context not init
-          initializeAudio(); // Try to initialize now
-      }
-      state.soundEnabled = !state.soundEnabled;
-      soundToggle.classList.toggle('muted', !state.soundEnabled);
-      soundToggle.innerHTML = state.soundEnabled ? 
-        '<span aria-hidden="true">🔊</span>' : 
-        '<span aria-hidden="true">🔇</span>';
-      soundToggle.setAttribute('aria-pressed', state.soundEnabled.toString());
-      
-      if (state.soundEnabled && audioContext) {
-        playSound(440, 100);
-      }
-    }
-
-    function toggleSettings() {
-      const isActive = settingsPanel.classList.toggle('active');
-      settingsPanel.hidden = !isActive;
-      settingsButton.setAttribute('aria-expanded', isActive.toString());
-      vibrate();
-      if (isActive) {
-        settingsPanel.querySelector('input[type="checkbox"]').focus();
-      } else {
-        settingsButton.focus();
-      }
-    }
-
-    function initializePWA() {
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        setTimeout(() => {
-          installPromptEl.classList.add('show');
-          installPromptEl.hidden = false;
-        }, 30000); // Show after 30 seconds
-      });
-
-      window.addEventListener('appinstalled', () => {
-        installPromptEl.classList.remove('show');
-        installPromptEl.hidden = true;
-        deferredPrompt = null;
-        console.log('ピコそろがインストールされました！');
+      state.history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history__item';
+        div.innerHTML = `
+          <div class="history__expression">${item.expression}</div>
+          <div class="history__result">= ${formatNumber(item.result)}</div>
+        `;
+        div.addEventListener('click', () => {
+          state.displayValue = String(item.result);
+          updateDisplay();
+          hideHistory();
+        });
+        elements.historyContent.appendChild(div);
       });
     }
 
-    async function installPWA() {
-      if (!deferredPrompt) return;
-      installPromptEl.classList.remove('show'); // Hide prompt first
-      installPromptEl.hidden = true;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('ユーザーはPWAのインストールを許可しました');
-      } else {
-        console.log('ユーザーはPWAのインストールを拒否しました');
-      }
-      deferredPrompt = null;
-    }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js') // Changed to relative path
-          .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
-          .catch(error => console.log('ServiceWorker registration failed: ', error));
-      });
-    }
-
-    window.addEventListener('DOMContentLoaded', init);
+    // 初期化実行
+    init();
   </script>
 </body>
 </html>
