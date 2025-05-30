@@ -33,7 +33,8 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
       background: var(--primary-bg);
       color: var(--text-primary);
-      height: 100vh;
+      height: 100vh; /* For older browsers */
+      height: calc(var(--vh, 1vh) * 100); /* Dynamic viewport height */
       overflow: hidden;
       position: fixed;
       width: 100%;
@@ -90,7 +91,7 @@
 
     /* メインコンテナ */
     .app-container {
-      height: 100vh;
+      height: 100%; /* Changed from 100vh to use dynamic --vh */
       display: flex;
       flex-direction: column;
       padding-top: var(--safe-area-top);
@@ -175,7 +176,7 @@
       width: 100%;
       height: 6px;
       background: linear-gradient(to bottom, #8b6914, #654321);
-      top: 30%;
+      top: 30%; /* This defines the separation line */
       left: 0;
       z-index: 5;
       border-radius: 3px;
@@ -210,23 +211,31 @@
     }
 
     .abacus-bead.heaven {
-      top: 15%;
+      /* Initial position above divider */
+      top: 15%; 
     }
 
     .abacus-bead.heaven.active {
-      transform: translateX(-50%) translateY(60px);
+      /* Moved down, towards/past divider */
+      transform: translateX(-50%) translateY(60px); 
     }
 
-    .abacus-bead.earth {
-      bottom: 15%;
-    }
+    /* --- MODIFIED CSS for Earth Beads --- */
+    /* Default initial position for earth beads (below divider) */
+    /* This default is not strictly needed if all data-index are styled */
+    /* .abacus-bead.earth { bottom: 15%; } */
 
-    .abacus-bead.earth:nth-child(3) { bottom: 28%; }
-    .abacus-bead.earth:nth-child(4) { bottom: 41%; }
-    .abacus-bead.earth:nth-child(5) { bottom: 54%; }
-
+    /* data-index="0" is the earth bead closest to the divider (top-most earth bead) */
+    /* data-index="3" is the earth bead furthest from the divider (bottom-most earth bead) */
+    .abacus-bead.earth[data-index="0"] { bottom: 54%; } /* Initial position for index 0 */
+    .abacus-bead.earth[data-index="1"] { bottom: 41%; } /* Initial position for index 1 */
+    .abacus-bead.earth[data-index="2"] { bottom: 28%; } /* Initial position for index 2 */
+    .abacus-bead.earth[data-index="3"] { bottom: 15%; } /* Initial position for index 3 */
+    /* --- END OF MODIFIED CSS --- */
+    
     .abacus-bead.earth.active {
-      transform: translateX(-50%) translateY(-100px);
+      /* Moved up, towards/past divider */
+      transform: translateX(-50%) translateY(-60px); /* Adjusted Y translation for earth beads */
     }
 
     .abacus-bead.moving {
@@ -237,6 +246,23 @@
       0%, 100% { transform: translateX(-50%) scale(1); }
       50% { transform: translateX(-50%) scale(1.1); }
     }
+    
+    /* Ensure active beads maintain their transform when bouncing */
+    .abacus-bead.heaven.active.moving {
+        animation: bead-bounce-heaven-active 0.5s ease;
+    }
+    @keyframes bead-bounce-heaven-active {
+      0%, 100% { transform: translateX(-50%) translateY(60px) scale(1); }
+      50% { transform: translateX(-50%) translateY(60px) scale(1.1); }
+    }
+    .abacus-bead.earth.active.moving {
+        animation: bead-bounce-earth-active 0.5s ease;
+    }
+    @keyframes bead-bounce-earth-active {
+      0%, 100% { transform: translateX(-50%) translateY(-60px) scale(1); }
+      50% { transform: translateX(-50%) translateY(-60px) scale(1.1); }
+    }
+
 
     .digit-label {
       position: absolute;
@@ -267,6 +293,7 @@
         0 1px 1px rgba(255, 255, 255, 0.1);
       position: relative;
       overflow: hidden;
+      word-break: break-all; /* For "Error" message */
     }
 
     .result-display::before {
@@ -400,14 +427,14 @@
       inset: 0;
       background: rgba(0, 0, 0, 0.9);
       z-index: 1000;
-      display: none;
+      display: none; /* Initially hidden */
       justify-content: center;
       align-items: center;
       padding: 20px;
     }
 
     .tutorial-overlay.active {
-      display: flex;
+      display: flex; /* Show when active */
     }
 
     .tutorial-content {
@@ -460,7 +487,7 @@
     }
 
     /* アクセシビリティ：フォーカス表示 */
-    *:focus {
+    *:focus-visible { /* Changed from :focus to :focus-visible for better UX */
       outline: 3px solid var(--accent-gold);
       outline-offset: 2px;
     }
@@ -485,6 +512,7 @@
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
       }
     }
 
@@ -503,9 +531,13 @@
       }
       
       .abacus-frame {
-        height: 200px;
+        height: 200px; /* Adjust abacus height for landscape */
       }
-      
+       /* Adjust bead movement for smaller abacus */
+      .abacus-bead.heaven.active { transform: translateX(-50%) translateY(40px); }
+      .abacus-bead.earth.active { transform: translateX(-50%) translateY(-40px); }
+
+
       .calculator-section {
         padding: 16px 20px;
       }
@@ -519,7 +551,7 @@
     /* アニメーション設定パネル */
     .settings-panel {
       position: fixed;
-      top: 60px;
+      top: 60px; /* Adjust based on header/safe area */
       right: 20px;
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(20px);
@@ -536,7 +568,7 @@
 
     .settings-button {
       position: fixed;
-      top: 60px;
+      top: 16px; /* Adjusted for consistency with safe-area */
       right: 20px;
       width: 44px;
       height: 44px;
@@ -549,8 +581,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 99;
+      z-index: 101; /* Ensure above settings panel when closed */
     }
+     /* Ensure settings panel is below button when transitioning */
+    .settings-panel { z-index: 100; }
+
 
     /* PWAインストールプロンプト */
     .install-prompt {
@@ -562,19 +597,19 @@
       backdrop-filter: blur(20px);
       border-radius: 16px;
       padding: 16px;
-      display: none;
+      display: none; /* Initially hidden */
       animation: slideUp 0.3s ease;
       z-index: 90;
     }
 
     .install-prompt.show {
-      display: block;
+      display: block; /* Show when class is added */
     }
 
     /* サウンドインジケーター */
     .sound-indicator {
       position: fixed;
-      top: 60px;
+      top: 16px; /* Adjusted for consistency */
       left: 20px;
       width: 44px;
       height: 44px;
@@ -587,12 +622,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 99;
+      z-index: 101;
     }
 
     .sound-indicator.muted {
       color: var(--text-secondary);
     }
+
   </style>
 </head>
 <body>
@@ -600,30 +636,30 @@
   <a href="#calculator" class="skip-link">電卓へスキップ</a>
 
   <!-- ローディング画面 -->
-  <div class="loading-screen" role="status" aria-label="読み込み中">
+  <div class="loading-screen" role="status" aria-live="assertive" aria-label="読み込み中">
     <div class="loading-spinner"></div>
   </div>
 
   <!-- メインアプリ -->
   <main class="app-container" role="main">
     <!-- ヘッダー -->
-    <header class="app-header">
-      <h1 class="app-title">そろばん電卓</h1>
+    <header class="app-header" role="banner">
+      <h1 class="app-title">ピコそろ電卓</h1> <!-- Title slightly adjusted for branding -->
     </header>
 
     <!-- サウンドインジケーター -->
-    <button class="sound-indicator" id="soundToggle" aria-label="サウンドのオン・オフ">
+    <button class="sound-indicator" id="soundToggle" aria-label="サウンドのオン・オフ" aria-pressed="true">
       <span aria-hidden="true">🔊</span>
     </button>
 
     <!-- 設定ボタン -->
-    <button class="settings-button" id="settingsButton" aria-label="設定を開く">
+    <button class="settings-button" id="settingsButton" aria-label="設定を開く" aria-expanded="false" aria-controls="settingsPanel">
       <span aria-hidden="true">⚙️</span>
     </button>
 
     <!-- 設定パネル -->
-    <aside class="settings-panel" id="settingsPanel" role="complementary" aria-label="設定">
-      <h2 style="font-size: 1rem; margin-bottom: 12px;">設定</h2>
+    <aside class="settings-panel" id="settingsPanel" role="complementary" aria-label="設定" hidden>
+      <h2 style="font-size: 1rem; margin-bottom: 12px;" id="settingsPanelTitle">設定</h2>
       <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
         <input type="checkbox" id="hapticToggle" checked>
         <span>振動フィードバック</span>
@@ -639,13 +675,14 @@
       <div class="abacus-container">
         <div class="abacus-frame" role="img" aria-label="5桁の算盤">
           <div class="abacus-rods" id="abacusRods">
+            <!-- Divider is part of the frame, not dynamically added to rods -->
             <div class="abacus-divider" aria-hidden="true"></div>
           </div>
         </div>
       </div>
       
       <!-- 計算結果表示 -->
-      <div class="result-display" id="display" role="status" aria-live="polite" aria-label="計算結果">
+      <div class="result-display" id="display" role="status" aria-live="polite" aria-atomic="true">
         0
       </div>
     </section>
@@ -654,30 +691,37 @@
     <section class="calculator-section" id="calculator" aria-label="電卓">
       <div class="calculator-grid">
         <button class="calc-button clear" data-action="clear" aria-label="クリア">C</button>
+        <button class="calc-button operator" data-action="backspace" aria-label="バックスペース">BS</button> <!-- Added Backspace -->
+        <button class="calc-button operator" data-action="percent" aria-label="パーセント">%</button> <!-- Added Percent -->
+        <button class="calc-button operator" data-action="operator" data-value="÷" aria-label="割る">÷</button>
+        
         <button class="calc-button" data-action="number" data-value="7" aria-label="7">7</button>
         <button class="calc-button" data-action="number" data-value="8" aria-label="8">8</button>
         <button class="calc-button" data-action="number" data-value="9" aria-label="9">9</button>
-        <button class="calc-button operator" data-action="operator" data-value="÷" aria-label="割る">÷</button>
+        <button class="calc-button operator" data-action="operator" data-value="×" aria-label="掛ける">×</button>
+
         <button class="calc-button" data-action="number" data-value="4" aria-label="4">4</button>
         <button class="calc-button" data-action="number" data-value="5" aria-label="5">5</button>
         <button class="calc-button" data-action="number" data-value="6" aria-label="6">6</button>
-        <button class="calc-button operator" data-action="operator" data-value="×" aria-label="掛ける">×</button>
+        <button class="calc-button operator" data-action="operator" data-value="-" aria-label="引く">-</button>
+
         <button class="calc-button" data-action="number" data-value="1" aria-label="1">1</button>
         <button class="calc-button" data-action="number" data-value="2" aria-label="2">2</button>
         <button class="calc-button" data-action="number" data-value="3" aria-label="3">3</button>
-        <button class="calc-button operator" data-action="operator" data-value="-" aria-label="引く">-</button>
-        <button class="calc-button" data-action="number" data-value="0" aria-label="0">0</button>
         <button class="calc-button operator" data-action="operator" data-value="+" aria-label="足す">+</button>
+        
+        <button class="calc-button" data-action="number" data-value="0" aria-label="0" style="grid-column: span 2;">0</button> <!-- Zero button spans 2 columns -->
+        <button class="calc-button" data-action="decimal" data-value="." aria-label="小数点">.</button> <!-- Added Decimal -->
         <button class="calc-button equals" data-action="equals" aria-label="イコール">=</button>
       </div>
     </section>
   </main>
 
   <!-- チュートリアルオーバーレイ -->
-  <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+  <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" aria-describedby="tutorialText" hidden>
     <div class="tutorial-content">
       <h2 class="tutorial-title" id="tutorialTitle">ようこそ！</h2>
-      <p class="tutorial-text">
+      <p class="tutorial-text" id="tutorialText">
         電卓で計算すると、上の算盤が連動して動きます。<br>
         珠をタップして直接動かすこともできます。
       </p>
@@ -686,7 +730,7 @@
   </div>
 
   <!-- PWAインストールプロンプト -->
-  <div class="install-prompt" id="installPrompt" role="alert">
+  <div class="install-prompt" id="installPrompt" role="alert" hidden>
     <p style="margin-bottom: 12px;">ホーム画面に追加して、いつでもすぐに使えるようにしましょう！</p>
     <button class="tutorial-button" id="installButton" style="width: 100%;">インストール</button>
   </div>
@@ -700,7 +744,8 @@
       operator: null,
       soundEnabled: true,
       hapticEnabled: true,
-      particleEnabled: true
+      particleEnabled: true,
+      errorState: false, // Added error state
     };
 
     // オーディオコンテキスト（サウンド用）
@@ -708,7 +753,7 @@
 
     // DOM要素
     const display = document.getElementById('display');
-    const abacusRods = document.getElementById('abacusRods');
+    const abacusRodsContainer = document.getElementById('abacusRods'); // Renamed for clarity
     const buttons = document.querySelectorAll('.calc-button');
     const loadingScreen = document.querySelector('.loading-screen');
     const tutorialOverlay = document.getElementById('tutorialOverlay');
@@ -718,123 +763,125 @@
     const settingsPanel = document.getElementById('settingsPanel');
     const hapticToggle = document.getElementById('hapticToggle');
     const particleToggle = document.getElementById('particleToggle');
-    const installPrompt = document.getElementById('installPrompt');
+    const installPromptEl = document.getElementById('installPrompt'); // Renamed to avoid conflict
     const installButton = document.getElementById('installButton');
 
     // PWA用変数
     let deferredPrompt;
+    const MAX_DIGITS = 5; // Max digits for abacus positive numbers
+    const MAX_INPUT_LENGTH = MAX_DIGITS + 1; // For negative sign e.g. -9999 is 5 chars, 99999 is 5 chars
 
     // 初期化
     function init() {
+      // Set dynamic viewport height
+      const setVh = () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      };
+      window.addEventListener('resize', setVh);
+      setVh(); // Initial call
+
       initializeAbacus();
       initializeEventListeners();
-      initializeAudio();
+      initializeAudio(); // Attempt to initialize early
       checkFirstVisit();
       initializePWA();
+      updateDisplay(); // Initial display update
       
-      // ローディング画面を非表示
       setTimeout(() => {
         loadingScreen.classList.add('hidden');
+        loadingScreen.setAttribute('aria-hidden', 'true'); // Hide from AT
       }, 500);
     }
 
     // 算盤の初期化
     function initializeAbacus() {
-      const positions = ['万', '千', '百', '十', '一'];
+      const positions = ['万', '千', '百', '十', '一']; // Corresponds to 10^4, 10^3, ..., 10^0
       
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < MAX_DIGITS; i++) { // Rods from left (万) to right (一)
         const rod = document.createElement('div');
         rod.className = 'abacus-rod';
-        rod.setAttribute('data-position', i);
+        rod.setAttribute('data-position-index', i); // 0 for 万, 1 for 千, ..., 4 for 一
         rod.setAttribute('aria-label', `${positions[i]}の位`);
 
-        // 柱
         const pillar = document.createElement('div');
         pillar.className = 'rod-pillar';
         pillar.setAttribute('aria-hidden', 'true');
         rod.appendChild(pillar);
 
-        // 天珠（5の位）
         const heavenBead = document.createElement('button');
         heavenBead.className = 'abacus-bead heaven';
         heavenBead.setAttribute('data-value', '5');
-        heavenBead.setAttribute('data-position', i);
+        heavenBead.setAttribute('data-position-index', i);
         heavenBead.setAttribute('role', 'button');
         heavenBead.setAttribute('aria-label', `${positions[i]}の位の5の珠`);
         heavenBead.setAttribute('aria-pressed', 'false');
         heavenBead.addEventListener('click', handleBeadClick);
         rod.appendChild(heavenBead);
 
-        // 地珠（1の位）× 4
-        for (let j = 0; j < 4; j++) {
+        for (let j = 0; j < 4; j++) { // Earth beads, j=0 is top-most, j=3 is bottom-most
           const earthBead = document.createElement('button');
           earthBead.className = 'abacus-bead earth';
           earthBead.setAttribute('data-value', '1');
-          earthBead.setAttribute('data-position', i);
-          earthBead.setAttribute('data-index', j);
+          earthBead.setAttribute('data-position-index', i);
+          earthBead.setAttribute('data-index', j); // j=0 (top) to j=3 (bottom)
           earthBead.setAttribute('role', 'button');
-          earthBead.setAttribute('aria-label', `${positions[i]}の位の${j + 1}番目の1の珠`);
+          earthBead.setAttribute('aria-label', `${positions[i]}の位の${j + 1}番目の1の珠 (上から${j+1}番目)`);
           earthBead.setAttribute('aria-pressed', 'false');
           earthBead.addEventListener('click', handleBeadClick);
           rod.appendChild(earthBead);
         }
 
-        // 桁ラベル
         const label = document.createElement('div');
         label.className = 'digit-label';
         label.textContent = positions[i];
         label.setAttribute('aria-hidden', 'true');
         rod.appendChild(label);
 
-        abacusRods.appendChild(rod);
+        abacusRodsContainer.appendChild(rod);
       }
     }
 
     // イベントリスナーの初期化
     function initializeEventListeners() {
-      // 電卓ボタン
       buttons.forEach(button => {
         button.addEventListener('click', handleButtonClick);
       });
-
-      // キーボード
       document.addEventListener('keydown', handleKeyPress);
-
-      // チュートリアル
       tutorialClose.addEventListener('click', closeTutorial);
-
-      // サウンドトグル
       soundToggle.addEventListener('click', toggleSound);
-
-      // 設定
       settingsButton.addEventListener('click', toggleSettings);
-      hapticToggle.addEventListener('change', (e) => {
-        state.hapticEnabled = e.target.checked;
-      });
-      particleToggle.addEventListener('change', (e) => {
-        state.particleEnabled = e.target.checked;
-      });
-
-      // PWAインストール
+      hapticToggle.addEventListener('change', (e) => state.hapticEnabled = e.target.checked);
+      particleToggle.addEventListener('change', (e) => state.particleEnabled = e.target.checked);
       installButton.addEventListener('click', installPWA);
-
-      // ビューポートの高さ調整（モバイルブラウザ対応）
-      window.addEventListener('resize', () => {
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-      });
     }
 
-    // オーディオ初期化
+    // オーディオ初期化 (ユーザーインタラクション後に呼び出されることを推奨)
     function initializeAudio() {
-      if (window.AudioContext || window.webkitAudioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioContext) return;
+      try {
+        if (window.AudioContext || window.webkitAudioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      } catch (e) {
+        console.error("AudioContext not supported or could not be created.", e);
+        state.soundEnabled = false; // Disable sound if context fails
+        soundToggle.classList.add('muted');
+        soundToggle.innerHTML = '<span aria-hidden="true">🔇</span>';
+        soundToggle.disabled = true; // Disable the button
       }
     }
 
     // サウンド再生
-    function playSound(frequency = 440, duration = 50) {
+    function playSound(frequency = 440, duration = 50, type = 'sine') {
       if (!state.soundEnabled || !audioContext) return;
+
+      // Ensure AudioContext is running (it might be suspended initially)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().catch(err => console.error("AudioContext resume failed:", err));
+      }
+      // If still not running, can't play sound
+      if (audioContext.state !== 'running') return;
 
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -842,375 +889,482 @@
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      oscillator.frequency.value = frequency;
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Start with some volume
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration / 1000); // Fade out
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + duration / 1000);
     }
-
-    // 振動フィードバック
+    
     function vibrate(pattern = [10]) {
-      if (state.hapticEnabled && 'vibrate' in navigator) {
-        navigator.vibrate(pattern);
+      if (state.hapticEnabled && navigator.vibrate) {
+        try {
+          navigator.vibrate(pattern);
+        } catch (e) {
+          // Some browsers might restrict vibrate, e.g. if not from a secure context or a user gesture.
+          console.warn("Vibration failed:", e);
+        }
       }
     }
 
-    // パーティクル効果
     function createParticle(x, y) {
       if (!state.particleEnabled) return;
-
       const particle = document.createElement('div');
       particle.className = 'particle';
       particle.style.left = x + 'px';
       particle.style.top = y + 'px';
       particle.style.setProperty('--tx', (Math.random() - 0.5) * 100 + 'px');
       particle.style.setProperty('--ty', (Math.random() - 0.5) * 100 + 'px');
-      
       document.body.appendChild(particle);
       setTimeout(() => particle.remove(), 1000);
     }
 
-    // ボタンクリック処理
     function handleButtonClick(e) {
+      // Initialize audio on first user interaction if not already done
+      if (!audioContext && state.soundEnabled) initializeAudio();
+
       const button = e.currentTarget;
       const { action, value } = button.dataset;
       const rect = button.getBoundingClientRect();
       
-      // エフェクト
       vibrate();
-      playSound(action === 'number' ? 300 : 400);
+      playSound(action === 'number' ? 300 : (action === 'clear' || action === 'backspace' ? 200 : 400));
       createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2);
 
-      // アクション実行
-      switch (action) {
-        case 'number':
-          inputDigit(value);
-          break;
-        case 'operator':
-          handleOperator(value);
-          break;
-        case 'equals':
-          calculate();
-          break;
-        case 'clear':
-          clear();
-          break;
+      if (state.errorState && action !== 'clear') {
+        return; // Only allow clear if in error state
       }
+
+      switch (action) {
+        case 'number': inputDigit(value); break;
+        case 'operator': handleOperator(value); break;
+        case 'equals': calculate(); break;
+        case 'clear': clearAll(); break;
+        case 'backspace': backspace(); break;
+        case 'decimal': inputDecimal(); break;
+        case 'percent': inputPercent(); break;
+        // default: // No default needed
+      }
+      updateDisplay();
+    }
+
+    function handleKeyPress(e) {
+      if (!audioContext && state.soundEnabled) initializeAudio();
+      
+      if (state.errorState && e.key !== 'Escape' && e.key.toLowerCase() !== 'c') {
+        return;
+      }
+
+      if (e.key >= '0' && e.key <= '9') { inputDigit(e.key); }
+      else if (e.key === '.') { inputDecimal(); }
+      else if (e.key === '+') { handleOperator('+'); }
+      else if (e.key === '-') { handleOperator('-'); }
+      else if (e.key === '*') { handleOperator('×'); }
+      else if (e.key === '/') { e.preventDefault(); handleOperator('÷'); }
+      else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calculate(); }
+      else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') { clearAll(); }
+      else if (e.key === 'Backspace') { backspace(); }
+      else if (e.key === '%') { inputPercent(); }
+      else { return; } // Don't update display if no relevant key was pressed
       
       updateDisplay();
     }
 
-    // キーボード入力処理
-    function handleKeyPress(e) {
-      if (e.key >= '0' && e.key <= '9') {
-        inputDigit(e.key);
-        updateDisplay();
-      } else if (['+', '-', '*', '/', 'Enter', '=', 'Escape', 'c', 'C'].includes(e.key)) {
-        e.preventDefault();
-        const keyMap = {
-          '+': '+',
-          '-': '-',
-          '*': '×',
-          '/': '÷',
-          'Enter': '=',
-          '=': '=',
-          'Escape': 'clear',
-          'c': 'clear',
-          'C': 'clear'
-        };
-        
-        if (keyMap[e.key] === 'clear') {
-          clear();
-        } else if (keyMap[e.key] === '=') {
-          calculate();
-        } else {
-          handleOperator(keyMap[e.key]);
-        }
-        updateDisplay();
-      }
-    }
-
-    // 数字入力
     function inputDigit(digit) {
-      const { displayValue, waitingForOperand } = state;
-
-      if (waitingForOperand) {
-        state.displayValue = String(digit);
+      if (state.waitingForOperand) {
+        state.displayValue = digit;
         state.waitingForOperand = false;
       } else {
-        state.displayValue = displayValue === '0' ? String(digit) : displayValue + digit;
+        state.displayValue = state.displayValue === '0' ? digit : state.displayValue + digit;
       }
-
-      // 最大桁数制限
-      if (state.displayValue.length > 5) {
-        state.displayValue = state.displayValue.slice(0, 5);
+      // Limit overall length (numbers + sign + decimal)
+      if (state.displayValue.length > MAX_INPUT_LENGTH + (state.displayValue.includes('.') ? 1 : 0) ) { // Allow one more for decimal
+         state.displayValue = state.displayValue.slice(0, state.displayValue.length -1);
       }
     }
 
-    // 演算子処理
-    function handleOperator(nextOperator) {
-      const { firstOperand, displayValue, operator } = state;
-      const inputValue = parseFloat(displayValue);
+    function inputDecimal() {
+      if (state.waitingForOperand) {
+        state.displayValue = '0.';
+        state.waitingForOperand = false;
+        return;
+      }
+      if (!state.displayValue.includes('.')) {
+        state.displayValue += '.';
+      }
+    }
+    
+    function backspace() {
+      if (state.displayValue.length === 1 || (state.displayValue.length === 2 && state.displayValue.startsWith('-'))) {
+        state.displayValue = '0';
+      } else {
+        state.displayValue = state.displayValue.slice(0, -1);
+      }
+    }
 
-      if (firstOperand === null) {
-        state.firstOperand = inputValue;
-      } else if (operator) {
-        const result = performCalculation[operator](firstOperand, inputValue);
-        state.displayValue = String(Math.floor(result));
-        state.firstOperand = result;
+    function handleOperator(nextOperator) {
+      const inputValue = parseFloat(state.displayValue);
+      if (isNaN(inputValue)) return; // Should not happen if errorState is handled
+
+      if (state.operator && state.waitingForOperand) { // Change operator
+        state.operator = nextOperator;
+        return;
       }
 
+      if (state.firstOperand === null) {
+        state.firstOperand = inputValue;
+      } else if (state.operator) {
+        const result = performCalculation[state.operator](state.firstOperand, inputValue);
+        if (!isFinite(result) || isNaN(result)) {
+          showError();
+          return;
+        }
+        state.displayValue = formatResult(result);
+        state.firstOperand = parseFloat(state.displayValue); // Use the formatted (and possibly clipped) result
+      }
       state.waitingForOperand = true;
       state.operator = nextOperator;
     }
 
-    // 計算実行
     function calculate() {
-      const { firstOperand, displayValue, operator } = state;
+      if (state.firstOperand === null || !state.operator) return;
       
-      if (firstOperand !== null && operator) {
-        const inputValue = parseFloat(displayValue);
-        const result = performCalculation[operator](firstOperand, inputValue);
-        state.displayValue = String(Math.floor(result));
-        state.firstOperand = null;
-        state.operator = null;
-        state.waitingForOperand = true;
-        
-        // 計算完了エフェクト
+      const inputValue = parseFloat(state.displayValue);
+      if (isNaN(inputValue)) { // Should not happen if errorState handled
+          showError();
+          return;
+      }
+
+      const result = performCalculation[state.operator](state.firstOperand, inputValue);
+      
+      if (!isFinite(result) || isNaN(result)) {
+        showError();
+      } else {
+        state.displayValue = formatResult(result);
+        // Calculation effect
         display.classList.add('calculating');
         setTimeout(() => display.classList.remove('calculating'), 1000);
       }
+      state.firstOperand = null;
+      state.operator = null;
+      state.waitingForOperand = true; // Ready for new input, old calculation is done
+    }
+    
+    function formatResult(value) {
+        // Attempt to show some precision for non-integers, then clip/round
+        let resultStr;
+        if (Math.abs(value) < 1e-7 && value !== 0) { // Very small numbers to sci notation or 0
+            resultStr = value.toExponential(2);
+        } else if (!Number.isInteger(value)) {
+            // Limit decimal places, e.g. to fit within display constraints
+            // This is a simple approach, more sophisticated formatting might be needed
+            resultStr = parseFloat(value.toFixed(7)).toString(); 
+        } else {
+            resultStr = String(value);
+        }
+
+        // Now, check length and clip if necessary for display
+        let numValue = parseFloat(resultStr); // Re-parse after potential toFixed
+
+        if (numValue > Math.pow(10, MAX_DIGITS) -1) { // e.g. > 99999
+            numValue = Math.pow(10, MAX_DIGITS) -1;
+        } else if (numValue < -(Math.pow(10, MAX_DIGITS-1) -1) ) { // e.g. < -9999
+            numValue = -(Math.pow(10, MAX_DIGITS-1) -1);
+        }
+        // Final string representation
+        // If it was a float that got rounded to int, remove trailing .0
+        resultStr = String(numValue); 
+        // Abacus works with integers, so result for abacus should be integer part
+        // We can refine this: if resultStr has more chars than MAX_INPUT_LENGTH, it's an issue.
+        if (resultStr.length > MAX_INPUT_LENGTH + (resultStr.includes('.') ? 1 : 0)) {
+            // If still too long (e.g. very long float string even after toFixed), clip or error
+            // For simplicity, clip to integer part's max length
+            if (numValue > 0) resultStr = String(Math.floor(numValue)).slice(0, MAX_DIGITS);
+            else resultStr = String(Math.ceil(numValue)).slice(0, MAX_INPUT_LENGTH);
+        }
+        return resultStr;
     }
 
-    // 計算ロジック
+
+    function showError() {
+      state.displayValue = 'Error';
+      state.errorState = true;
+      state.firstOperand = null;
+      state.operator = null;
+      state.waitingForOperand = false; // Not waiting for operand, waiting for clear
+      playSound(150, 200, 'square'); // Error sound
+    }
+
     const performCalculation = {
-      '÷': (a, b) => b !== 0 ? a / b : 0,
+      '÷': (a, b) => b === 0 ? Infinity : a / b,
       '×': (a, b) => a * b,
       '+': (a, b) => a + b,
-      '-': (a, b) => a - b
+      '-': (a, b) => a - b,
     };
 
-    // クリア
-    function clear() {
+    function inputPercent() {
+        let currentValue = parseFloat(state.displayValue);
+        if (isNaN(currentValue)) return;
+
+        if (state.firstOperand !== null && state.operator) {
+            // Calculate percentage of the first operand
+            // e.g. 100 + 10% means 100 + (10/100 * 100)
+            // e.g. 100 * 10% means 100 * (10/100)
+            if (state.operator === '+' || state.operator === '-') {
+                 currentValue = state.firstOperand * (currentValue / 100);
+            } else { // for ×, ÷
+                 currentValue = currentValue / 100;
+            }
+        } else {
+            // Just convert current display to percentage
+            currentValue = currentValue / 100;
+        }
+        state.displayValue = formatResult(currentValue);
+        // state.waitingForOperand = true; // Depends on desired behavior after %
+    }
+
+
+    function clearAll() {
       state.displayValue = '0';
       state.firstOperand = null;
       state.waitingForOperand = false;
       state.operator = null;
-      playSound(200, 100);
+      state.errorState = false;
+      playSound(250, 100, 'sawtooth');
     }
 
-    // 表示更新
     function updateDisplay() {
       display.textContent = state.displayValue;
-      updateAbacus(parseInt(state.displayValue) || 0);
-      
-      // アクセシビリティ用の読み上げ
+      // Abacus only shows positive integers up to MAX_DIGITS
+      const valueForAbacus = Math.floor(Math.abs(parseFloat(state.displayValue))) || 0;
+      updateAbacus(valueForAbacus);
       display.setAttribute('aria-label', `計算結果: ${state.displayValue}`);
     }
 
-    // 算盤更新
     function updateAbacus(value) {
-      // すべての珠をリセット
       document.querySelectorAll('.abacus-bead').forEach(bead => {
         bead.classList.remove('active', 'moving');
         bead.setAttribute('aria-pressed', 'false');
       });
 
-      // 数値を各桁に分解
-      const digits = Math.abs(value).toString().padStart(5, '0').split('');
+      if (value > Math.pow(10, MAX_DIGITS) -1 ) value = Math.pow(10, MAX_DIGITS) -1; // Cap for abacus
+
+      // Convert number to an array of digits, left-padded with '0' to MAX_DIGITS length.
+      // E.g., 123 becomes ['0', '0', '1', '2', '3'] for a 5-digit abacus.
+      const digits = value.toString().padStart(MAX_DIGITS, '0').split('');
       
-      digits.forEach((digit, position) => {
-        const digitValue = parseInt(digit);
+      digits.forEach((digitStr, positionIndex) => { // positionIndex: 0 for 万, 1 for 千, ...
+        const digitValue = parseInt(digitStr);
         
-        // 5以上なら天珠を動かす
+        const heavenBead = document.querySelector(
+          `.abacus-bead.heaven[data-position-index="${positionIndex}"]`
+        );
         if (digitValue >= 5) {
-          const heavenBead = document.querySelector(
-            `.abacus-bead.heaven[data-position="${position}"]`
-          );
-          if (heavenBead) {
+          if (heavenBead && !heavenBead.classList.contains('active')) {
             setTimeout(() => {
               heavenBead.classList.add('active', 'moving');
               heavenBead.setAttribute('aria-pressed', 'true');
               playSound(600, 30);
-            }, position * 50);
+            }, positionIndex * 50);
           }
+        } else {
+            if (heavenBead && heavenBead.classList.contains('active')) {
+                 setTimeout(() => { // Deactivate if not >= 5
+                    heavenBead.classList.remove('active', 'moving');
+                    heavenBead.setAttribute('aria-pressed', 'false');
+                 }, positionIndex * 50);
+            }
         }
 
-        // 残りの値で地珠を動かす
         const earthValue = digitValue % 5;
-        const earthBeads = document.querySelectorAll(
-          `.abacus-bead.earth[data-position="${position}"]`
+        const earthBeadsInRod = document.querySelectorAll(
+          `.abacus-bead.earth[data-position-index="${positionIndex}"]`
         );
         
-        for (let i = 0; i < earthValue; i++) {
-          if (earthBeads[i]) {
-            setTimeout(() => {
-              earthBeads[i].classList.add('active', 'moving');
-              earthBeads[i].setAttribute('aria-pressed', 'true');
-              playSound(400 + i * 50, 30);
-            }, position * 50 + (i + 1) * 30);
-          }
-        }
+        earthBeadsInRod.forEach((earthBead, beadIndexInRod) => { // beadIndexInRod: 0 (top) to 3 (bottom)
+            // Earth beads are active if their index is less than earthValue
+            // (i.e., if beadIndexInRod is 0, 1, ..., earthValue-1)
+            const shouldBeActive = beadIndexInRod < earthValue;
+            if (shouldBeActive && !earthBead.classList.contains('active')) {
+                setTimeout(() => {
+                    earthBead.classList.add('active', 'moving');
+                    earthBead.setAttribute('aria-pressed', 'true');
+                    playSound(400 + beadIndexInRod * 50, 30);
+                }, positionIndex * 50 + (beadIndexInRod + 1) * 30);
+            } else if (!shouldBeActive && earthBead.classList.contains('active')) {
+                 setTimeout(() => { // Deactivate if not needed
+                    earthBead.classList.remove('active', 'moving');
+                    earthBead.setAttribute('aria-pressed', 'false');
+                 }, positionIndex * 50 + (beadIndexInRod + 1) * 30);
+            }
+        });
       });
     }
 
-    // 珠クリック処理
     function handleBeadClick(e) {
+      if (!audioContext && state.soundEnabled) initializeAudio(); // Ensure audio context for direct bead interaction
+      if (state.errorState) return; // No bead interaction in error state
+
       const bead = e.currentTarget;
-      const position = parseInt(bead.dataset.position);
-      const isActive = bead.classList.contains('active');
+      const positionIndex = parseInt(bead.dataset.positionIndex); // 0 for 万 ... 4 for 一
+      const wasActive = bead.classList.contains('active');
       
       vibrate();
-      playSound(isActive ? 300 : 500);
-      
-      // 現在の算盤の値を計算
-      let currentValue = 0;
-      for (let i = 0; i < 5; i++) {
-        let digitValue = 0;
-        
-        const heavenBead = document.querySelector(
-          `.abacus-bead.heaven[data-position="${i}"]`
+      // Sound pitch depends on whether activating or deactivating
+      playSound(wasActive ? 350 : 550, 40, 'triangle');
+      bead.classList.toggle('active');
+      bead.classList.add('moving'); // Add moving class for animation
+      bead.setAttribute('aria-pressed', String(!wasActive));
+
+      if (bead.classList.contains('earth')) {
+        // Standard abacus behavior for earth beads:
+        // - Clicking an inactive bead to activate it also activates beads below it (further from divider).
+        // - Clicking an active bead to deactivate it also deactivates beads above it (closer to divider).
+        // This means we operate on a "stack" from the clicked bead.
+        // data-index is 0 (top) to 3 (bottom)
+        const clickedEarthBeadIndex = parseInt(bead.dataset.index);
+        const earthBeadsInRod = document.querySelectorAll(
+            `.abacus-bead.earth[data-position-index="${positionIndex}"]`
         );
-        if (heavenBead && heavenBead.classList.contains('active')) {
-          digitValue += 5;
+
+        if (!wasActive) { // Bead was off, turned on (move beads up)
+            // All beads from clicked one UP TO THE TOP (index 0) should be activated
+            for (let i = 0; i <= clickedEarthBeadIndex; i++) {
+                if (!earthBeadsInRod[i].classList.contains('active')) {
+                    earthBeadsInRod[i].classList.add('active');
+                    earthBeadsInRod[i].setAttribute('aria-pressed', 'true');
+                }
+            }
+        } else { // Bead was on, turned off (move beads down)
+            // All beads from clicked one DOWN TO THE BOTTOM (index 3) should be deactivated
+            for (let i = clickedEarthBeadIndex; i < 4; i++) {
+                 if (earthBeadsInRod[i].classList.contains('active')) {
+                    earthBeadsInRod[i].classList.remove('active');
+                    earthBeadsInRod[i].setAttribute('aria-pressed', 'false');
+                }
+            }
         }
-        
-        const earthBeads = document.querySelectorAll(
-          `.abacus-bead.earth[data-position="${i}"]`
-        );
-        earthBeads.forEach((b, index) => {
-          if (b.classList.contains('active')) {
-            digitValue += 1;
+      }
+      
+      // Recalculate displayValue from abacus state
+      let newDisplayValue = 0;
+      for (let i = 0; i < MAX_DIGITS; i++) { // Rod index: 0 (万) to 4 (一)
+        let digitOnRod = 0;
+        const heavenBead = document.querySelector(`.abacus-bead.heaven[data-position-index="${i}"]`);
+        if (heavenBead.classList.contains('active')) {
+          digitOnRod += 5;
+        }
+        const earthBeadsInRod = document.querySelectorAll(`.abacus-bead.earth[data-position-index="${i}"]`);
+        earthBeadsInRod.forEach(eb => {
+          if (eb.classList.contains('active')) {
+            digitOnRod += 1;
           }
         });
-        
-        currentValue += digitValue * Math.pow(10, 4 - i);
+        newDisplayValue = newDisplayValue * 10 + digitOnRod;
       }
       
-      // クリックされた珠の処理
-      if (bead.classList.contains('heaven')) {
-        // 天珠の処理
-        if (isActive) {
-          bead.classList.remove('active');
-          currentValue -= 5 * Math.pow(10, 4 - position);
-        } else {
-          bead.classList.add('active');
-          currentValue += 5 * Math.pow(10, 4 - position);
-        }
-      } else {
-        // 地珠の処理
-        const index = parseInt(bead.dataset.index);
-        const samePositionBeads = document.querySelectorAll(
-          `.abacus-bead.earth[data-position="${position}"]`
-        );
-        
-        if (isActive) {
-          // この珠より上の珠もすべて非アクティブに
-          for (let i = index; i < 4; i++) {
-            if (samePositionBeads[i].classList.contains('active')) {
-              samePositionBeads[i].classList.remove('active');
-              currentValue -= Math.pow(10, 4 - position);
-            }
-          }
-        } else {
-          // この珠より下の珠もすべてアクティブに
-          for (let i = 0; i <= index; i++) {
-            if (!samePositionBeads[i].classList.contains('active')) {
-              samePositionBeads[i].classList.add('active');
-              currentValue += Math.pow(10, 4 - position);
-            }
-          }
-        }
-      }
+      state.displayValue = String(newDisplayValue);
+      // Reset calculator state if abacus is manually changed
+      state.firstOperand = null;
+      state.operator = null;
+      state.waitingForOperand = false; // Start new input if numbers are typed
       
-      // 表示を更新
-      state.displayValue = String(currentValue);
-      updateDisplay();
+      updateDisplay(); // This will call updateAbacus again, which is fine, it will simply re-affirm state
+                       // Or, could optimize updateDisplay to not call updateAbacus if called from here.
     }
 
-    // 初回訪問チェック
+
     function checkFirstVisit() {
-      // localStorageは使えないので、セッション中のみ
-      if (!sessionStorage.getItem('visited')) {
+      if (!localStorage.getItem('pikosoroVisited')) { // Changed to localStorage for persistence
         setTimeout(() => {
+          tutorialOverlay.hidden = false;
           tutorialOverlay.classList.add('active');
-          sessionStorage.setItem('visited', 'true');
+          localStorage.setItem('pikosoroVisited', 'true');
         }, 1000);
+      } else {
+        tutorialOverlay.hidden = true; // Ensure it's hidden if already visited
       }
     }
 
-    // チュートリアルを閉じる
     function closeTutorial() {
       tutorialOverlay.classList.remove('active');
+      tutorialOverlay.hidden = true;
       vibrate([50, 50, 50]);
+      // Focus management: return focus to a sensible element, e.g., first calculator button
+      const firstCalcButton = document.querySelector('.calc-button[data-action="clear"]');
+      if (firstCalcButton) firstCalcButton.focus();
     }
 
-    // サウンドトグル
     function toggleSound() {
+      if (!audioContext && !state.soundEnabled) { // If sound was off and context not init
+          initializeAudio(); // Try to initialize now
+      }
       state.soundEnabled = !state.soundEnabled;
       soundToggle.classList.toggle('muted', !state.soundEnabled);
       soundToggle.innerHTML = state.soundEnabled ? 
         '<span aria-hidden="true">🔊</span>' : 
         '<span aria-hidden="true">🔇</span>';
+      soundToggle.setAttribute('aria-pressed', state.soundEnabled.toString());
       
-      if (state.soundEnabled) {
+      if (state.soundEnabled && audioContext) {
         playSound(440, 100);
       }
     }
 
-    // 設定パネルトグル
     function toggleSettings() {
-      settingsPanel.classList.toggle('active');
+      const isActive = settingsPanel.classList.toggle('active');
+      settingsPanel.hidden = !isActive;
+      settingsButton.setAttribute('aria-expanded', isActive.toString());
       vibrate();
+      if (isActive) {
+        settingsPanel.querySelector('input[type="checkbox"]').focus();
+      } else {
+        settingsButton.focus();
+      }
     }
 
-    // PWA初期化
     function initializePWA() {
-      // インストールプロンプトイベント
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        
-        // インストールプロンプトを表示
         setTimeout(() => {
-          installPrompt.classList.add('show');
-        }, 30000); // 30秒後に表示
+          installPromptEl.classList.add('show');
+          installPromptEl.hidden = false;
+        }, 30000); // Show after 30 seconds
       });
 
-      // インストール成功
       window.addEventListener('appinstalled', () => {
-        installPrompt.classList.remove('show');
+        installPromptEl.classList.remove('show');
+        installPromptEl.hidden = true;
         deferredPrompt = null;
+        console.log('ピコそろがインストールされました！');
       });
     }
 
-    // PWAインストール
     async function installPWA() {
       if (!deferredPrompt) return;
-
+      installPromptEl.classList.remove('show'); // Hide prompt first
+      installPromptEl.hidden = true;
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
       if (outcome === 'accepted') {
-        console.log('PWAがインストールされました');
+        console.log('ユーザーはPWAのインストールを許可しました');
+      } else {
+        console.log('ユーザーはPWAのインストールを拒否しました');
       }
-      
-      installPrompt.classList.remove('show');
       deferredPrompt = null;
     }
 
-    // Service Worker登録（PWA用）
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {
-          // Service Workerの登録失敗を無視（開発環境用）
-        });
+        navigator.serviceWorker.register('./sw.js') // Changed to relative path
+          .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
+          .catch(error => console.log('ServiceWorker registration failed: ', error));
       });
     }
 
-    // 初期化実行
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
