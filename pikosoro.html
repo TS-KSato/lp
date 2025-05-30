@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-  <title>ピコそろ Pro</title>
+  <title>ピコそろ Pro v1.1</title>
   <!-- Manifest (Base64‑encoded JSON) → PWA installable -->
   <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlrb3Nvcm8gUHJvIiwic2hvcnRfbmFtZSI6IlBpa29zb3JvIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCIsImJhY2tncm91bmRfY29sb3IiOiIjZmZmZmZmIn0=">
   <style>
@@ -30,12 +30,13 @@
     main{flex:1;display:flex;flex-direction:column;gap:16px;padding:0 16px 24px}
 
     /* -------- DISPLAY -------- */
-    #valueDisplay{border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);font-size:28px;font-weight:500;text-align:right}
+    #valueDisplay{border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);font-size:28px;font-weight:500;text-align:right;user-select:all}
 
     /* -------- ABACUS -------- */
     .abacus{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:8px;justify-content:center;width:100%;margin:auto}
-    .rod{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .rod{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
     .bead{width:22px;height:22px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+    .bead.top{margin-bottom:8px}
     .bead.top.active{transform:translateY(24px)}   /* 下へ */
     .bead.bottom.active{transform:translateY(-24px)}/* 上へ */
     .separator{grid-column:1/-1;height:2px;background:var(--border);margin-top:8px}
@@ -87,71 +88,85 @@
     /* ---------- abacus ---------- */
     const RODS=13, BOTTOM=4;
     const abacusEl=$('#abacus');
+    const rods=[]; // DOM refs
     const state=Array.from({length:RODS},()=>({top:false,bottom:0}));
 
     // build rods
     for(let r=0;r<RODS;r++){
       const rod=document.createElement('div');rod.className='rod';
-      // top bead
       const top=document.createElement('div');top.className='bead top';rod.appendChild(top);
-      // spacer (visual)
       const spacer=document.createElement('div');spacer.style.height='8px';rod.appendChild(spacer);
-      // bottom beads
       for(let i=0;i<BOTTOM;i++){
         const b=document.createElement('div');b.className='bead bottom';rod.appendChild(b);
       }
-      abacusEl.appendChild(rod);
+      abacusEl.appendChild(rod);rods.push({rod,top,bottom:[...rod.querySelectorAll('.bead.bottom')]});
     }
-    // separator line
-    const sep=document.createElement('div');sep.className='separator';abacusEl.appendChild(sep);
+    abacusEl.appendChild(Object.assign(document.createElement('div'),{className:'separator'}));
 
-    // update display
-    const update=()=>{
+    /* --- utility: sync DOM from state --- */
+    function drawFromState(){
+      state.forEach((d,i)=>{
+        rods[i].top.classList.toggle('active',d.top);
+        rods[i].bottom.forEach((b,j)=>b.classList.toggle('active',j<d.bottom));
+      });
       const value=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(RODS-idx-1),0);
       $('#valueDisplay').textContent=value.toLocaleString('ja-JP');
-    };
+    }
 
+    /* --- utility: set state from number --- */
+    function setValue(num){
+      if(!Number.isFinite(num)||num<0||num>=10**RODS){toast('桁あふれ');return;}
+      const str=Math.floor(num).toString().padStart(RODS,'0');
+      [...str].forEach((digitChar,i)=>{
+        const d=Number(digitChar);
+        state[i].top=d>=5;
+        state[i].bottom=d%5;
+      });
+      drawFromState();
+    }
+
+    /* click on beads → mutate state */
     abacusEl.addEventListener('click',e=>{
       const bead=e.target.closest('.bead');
       if(!bead) return;
-      const rod=bead.parentElement;
-      const rodIndex=[...abacusEl.children].filter(el=>el.classList.contains('rod')).indexOf(rod);
-      const data=state[rodIndex];
-
+      const rodIdx=rods.findIndex(r=>r.rod.contains(bead));
+      const data=state[rodIdx];
       if(bead.classList.contains('top')){
         data.top=!data.top;
-        bead.classList.toggle('active',data.top);
-      }else{ // bottom beads
-        const beads=[...rod.querySelectorAll('.bead.bottom')];
-        const idx=beads.indexOf(bead); // 0‑based
+      }else{
+        const idx=rods[rodIdx].bottom.indexOf(bead);
         const target=idx+1;
-        if(data.bottom===target){data.bottom=idx;}else{data.bottom=target;}
-        beads.forEach((b,i)=>b.classList.toggle('active',i<data.bottom));
+        data.bottom = (data.bottom===target)?idx:target;
       }
-      update();
+      drawFromState();
     });
-    update();
+
+    /* initial draw */
+    drawFromState();
 
     /* ---------- calculator ---------- */
     const KEYS=['C','7','8','9','÷','4','5','6','×','1','2','3','-','0','.','=','+'];
     const calcEl=$('#calculator');
     let expr='';
+    const updateDisplayRaw=()=>$('#valueDisplay').textContent=expr||'0';
+
     KEYS.forEach(k=>{
       const btn=document.createElement('button');btn.textContent=k;btn.className='calc-btn';
       if('÷×-++'.includes(k))btn.classList.add('op');
       if(k==='=')btn.classList.add('eq');
       btn.addEventListener('click',()=>{
-        if(k==='C'){expr='';$('#valueDisplay').textContent='0';return;}
+        if(k==='C'){expr='';setValue(0);return;}
         if(k==='='){
-          try{const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=result.toString();toast(result);}catch{toast('式エラー');expr='';}
-        }else{expr+=k;}
-        $('#valueDisplay').textContent=expr||'0';
+          try{const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=result.toString();setValue(result);}catch{toast('式エラー');expr='';setValue(0);}return;}
+        expr+=k;
+        updateDisplayRaw();
+        if(/^\d+$/.test(expr)) setValue(Number(expr));
       });
       calcEl.appendChild(btn);
     });
 
     /* ---------- info ---------- */
-    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro 1.0.1'));
+    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro v1.1'));    
   </script>
 </body>
 </html>
