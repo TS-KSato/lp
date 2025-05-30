@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ナンバーマッチ チャレンジゲーム</title> {/* タイトル変更 */}
+    <title>ナンバーマッチ チャレンジゲーム</title>
     <style>
         :root {
             --digit-columns: 8; /* 組2桁 + 番号6桁 */
@@ -364,7 +364,7 @@
             
             const groupLabel = document.createElement('span');
             groupLabel.classList.add('tn-group-label'); // class prefix変更
-            groupLabel.textContent = '前半'; // 「組」から変更
+            groupLabel.textContent = '組';
             patternDetailsDisplay.appendChild(groupLabel);
 
             const spacer = document.createElement('span');
@@ -380,7 +380,7 @@
 
             const numberLabel = document.createElement('span');
             numberLabel.classList.add('tn-number-label'); // class prefix変更
-            numberLabel.textContent = '後半'; // 「番」から変更
+            numberLabel.textContent = '番';
             patternDetailsDisplay.appendChild(numberLabel);
 
             currentTargetDigits = [...groupDigits, ...numberDigits];
