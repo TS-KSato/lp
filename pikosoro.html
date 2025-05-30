@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-  <title>ピコそろ Pro v1.1</title>
+  <title>ピコそろ Pro v1.2</title>
   <!-- Manifest (Base64‑encoded JSON) → PWA installable -->
   <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlrb3Nvcm8gUHJvIiwic2hvcnRfbmFtZSI6IlBpa29zb3JvIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCIsImJhY2tncm91bmRfY29sb3IiOiIjZmZmZmZmIn0=">
   <style>
@@ -13,7 +13,7 @@
 
     /* -------- THEME TOKENS -------- */
     :root{
-      --accent:#007aff;--radius:10px;
+      --accent:#007aff;--five:#ff9500;--radius:10px;
       --light-bg:#fafafa;--light-fg:#121212;--light-border:#d0d0d0;
       --dark-bg:#000000;--dark-fg:#ffffff;--dark-border:#3a3a3c;
     }
@@ -33,13 +33,15 @@
     #valueDisplay{border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);font-size:28px;font-weight:500;text-align:right;user-select:all}
 
     /* -------- ABACUS -------- */
-    .abacus{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:8px;justify-content:center;width:100%;margin:auto}
+    .abacus{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:10px;justify-content:center;width:100%;margin:auto}
     .rod{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
-    .bead{width:22px;height:22px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s cubic-bezier(.4,0,.2,1)}
-    .bead.top{margin-bottom:8px}
-    .bead.top.active{transform:translateY(24px)}   /* 下へ */
-    .bead.bottom.active{transform:translateY(-24px)}/* 上へ */
-    .separator{grid-column:1/-1;height:2px;background:var(--border);margin-top:8px}
+    .bead{width:24px;height:24px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+    .bead.five{background:var(--five)} /* 五玉の視認性 */
+    .bead.five.active{transform:translateY(16px)}
+    .bead.one.active{transform:translateY(-16px)}
+    .spacer{height:16px;width:100%}
+    .beam{grid-column:1/-1;height:6px;background:var(--border);margin-top:6px;border-radius:3px}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--fg);margin-top:2px}
 
     /* -------- CALCULATOR -------- */
     .calculator{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -91,22 +93,27 @@
     const rods=[]; // DOM refs
     const state=Array.from({length:RODS},()=>({top:false,bottom:0}));
 
+    function createDot(){const d=document.createElement('div');d.className='dot';return d;}
+
     // build rods
     for(let r=0;r<RODS;r++){
       const rod=document.createElement('div');rod.className='rod';
-      const top=document.createElement('div');top.className='bead top';rod.appendChild(top);
-      const spacer=document.createElement('div');spacer.style.height='8px';rod.appendChild(spacer);
-      for(let i=0;i<BOTTOM;i++){
-        const b=document.createElement('div');b.className='bead bottom';rod.appendChild(b);
-      }
-      abacusEl.appendChild(rod);rods.push({rod,top,bottom:[...rod.querySelectorAll('.bead.bottom')]});
+      const five=document.createElement('div');five.className='bead five';rod.appendChild(five);
+      const spacer=document.createElement('div');spacer.className='spacer';rod.appendChild(spacer);
+      const bottomBeads=[];
+      for(let i=0;i<BOTTOM;i++){const b=document.createElement('div');b.className='bead one';rod.appendChild(b);bottomBeads.push(b);}
+      // teiiten: dot under rods where (RODS-1-r)%3==0  (units, thousands, millions…)
+      if((RODS-1-r)%3===0){rod.appendChild(createDot());}
+      abacusEl.appendChild(rod);
+      rods.push({rod,five,bottom:bottomBeads});
     }
-    abacusEl.appendChild(Object.assign(document.createElement('div'),{className:'separator'}));
+    // beam (梁)
+    abacusEl.appendChild(Object.assign(document.createElement('div'),{className:'beam'}));
 
     /* --- utility: sync DOM from state --- */
     function drawFromState(){
       state.forEach((d,i)=>{
-        rods[i].top.classList.toggle('active',d.top);
+        rods[i].five.classList.toggle('active',d.top);
         rods[i].bottom.forEach((b,j)=>b.classList.toggle('active',j<d.bottom));
       });
       const value=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(RODS-idx-1),0);
@@ -131,7 +138,7 @@
       if(!bead) return;
       const rodIdx=rods.findIndex(r=>r.rod.contains(bead));
       const data=state[rodIdx];
-      if(bead.classList.contains('top')){
+      if(bead===rods[rodIdx].five){
         data.top=!data.top;
       }else{
         const idx=rods[rodIdx].bottom.indexOf(bead);
@@ -157,16 +164,19 @@
       btn.addEventListener('click',()=>{
         if(k==='C'){expr='';setValue(0);return;}
         if(k==='='){
-          try{const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=result.toString();setValue(result);}catch{toast('式エラー');expr='';setValue(0);}return;}
-        expr+=k;
-        updateDisplayRaw();
+          try{
+            const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();
+            expr=result.toString();
+            setValue(result);
+          }catch{toast('式エラー');expr='';setValue(0);}return;}
+        expr+=k;updateDisplayRaw();
         if(/^\d+$/.test(expr)) setValue(Number(expr));
       });
       calcEl.appendChild(btn);
     });
 
     /* ---------- info ---------- */
-    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro v1.1'));    
+    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro v1.2'));    
   </script>
 </body>
 </html>
