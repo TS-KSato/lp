@@ -1,163 +1,151 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="dark">
+<html lang="ja" data-theme="auto">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="color-scheme" content="dark light">
-  <title>ピコそろ Pro — Soroban × Calculator</title>
-  <link rel="manifest" href="data:application/manifest+json,{\"name\":\"ピコそろ Pro\",\"short_name\":\"ピコそろ\",\"start_url\":\"./index.html\",\"display\":\"standalone\",\"theme_color\":\"#000000\",\"background_color\":\"#ffffff\"}">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>ピコそろ Pro</title>
+  <!-- 正しい Base64 マニフェスト：Chrome の syntax error を解消 -->
+  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlrb3Nvcm8gUHJvIiwic2hvcnRfbmFtZSI6IlBpa29zb3JvIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwidGhlbWVfY29sb3IiOiIjMDAwMDAwIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYifQ==">
   <style>
-    /* ------------------------------------
-       01. CSS RESET & BASE TYPOGRAPHY
-    ------------------------------------ */
-    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html{-webkit-text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo UI",sans-serif;line-height:1.5}
-    body{min-height:100vh;background:var(--bg-primary);color:var(--text-primary);display:flex;flex-direction:column;user-select:none;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
-    img{max-width:100%;height:auto}
+    /* ---------------- RESET ---------------- */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.5;min-height:100vh;display:flex;flex-direction:column;background:var(--bg-primary);color:var(--text-primary)}
 
-    /* ------------------------------------
-       02. THEME TOKENS
-    ------------------------------------ */
-    :root{
-      /* light */
-      --light-bg-primary:#fafafa;--light-bg-secondary:#ffffff;--light-bg-tertiary:#f1f1f3;
-      --light-text-primary:#1c1c1e;--light-text-secondary:#636366;--light-text-tertiary:#8e8e93;
-      --light-border:#e5e5ea;--light-shadow:rgba(0,0,0,.06);
-      /* dark */
-      --dark-bg-primary:#000000;--dark-bg-secondary:#0a0a0a;--dark-bg-tertiary:#141414;
-      --dark-text-primary:#ffffff;--dark-text-secondary:#8e8e93;--dark-text-tertiary:#48484a;
-      --dark-border:#1c1c1e;--dark-shadow:rgba(0,0,0,.8);
+    /* -------------- THEME TOKENS -------------- */
+    :root{--light-bg-primary:#fafafa;--light-text-primary:#121212;--light-border:#e1e1e1;--dark-bg-primary:#000;--dark-text-primary:#fff;--dark-border:#2c2c2e;--accent:#1e90ff;--radius:10px}
+    @media(prefers-color-scheme:light){:root{--bg-primary:var(--light-bg-primary);--text-primary:var(--light-text-primary);--border:var(--light-border)}}
+    @media(prefers-color-scheme:dark){:root{--bg-primary:var(--dark-bg-primary);--text-primary:var(--dark-text-primary);--border:var(--dark-border)}}
+    html[data-theme="light"]{--bg-primary:var(--light-bg-primary);--text-primary:var(--light-text-primary);--border:var(--light-border)}
+    html[data-theme="dark"]{--bg-primary:var(--dark-bg-primary);--text-primary:var(--dark-text-primary);--border:var(--dark-border)}
 
-      /* accent palette (shared) */
-      --accent:#007aff;--success:#34c759;--warning:#ff9f0a;--danger:#ff453a;
-      --radius-s:8px;--radius-m:12px;--radius-l:24px;
-      --duration-s:.15s;--duration-m:.3s;--bezier:cubic-bezier(.4,0,.2,1);
-    }
-
-    /* automatic light/dark from prefers-color-scheme */
-    @media(prefers-color-scheme:light){html:not([data-theme="dark"]){--bg-primary:var(--light-bg-primary);--bg-secondary:var(--light-bg-secondary);--bg-tertiary:var(--light-bg-tertiary);--text-primary:var(--light-text-primary);--text-secondary:var(--light-text-secondary);--text-tertiary:var(--light-text-tertiary);--border:var(--light-border);--shadow:var(--light-shadow)}}
-    @media(prefers-color-scheme:dark){html:not([data-theme="light"]){--bg-primary:var(--dark-bg-primary);--bg-secondary:var(--dark-bg-secondary);--bg-tertiary:var(--dark-bg-tertiary);--text-primary:var(--dark-text-primary);--text-secondary:var(--dark-text-secondary);--text-tertiary:var(--dark-text-tertiary);--border:var(--dark-border);--shadow:var(--dark-shadow)}}
-
-    /* explicit theme overrides */
-    html[data-theme="light"]{--bg-primary:var(--light-bg-primary);--bg-secondary:var(--light-bg-secondary);--bg-tertiary:var(--light-bg-tertiary);--text-primary:var(--light-text-primary);--text-secondary:var(--light-text-secondary);--text-tertiary:var(--light-text-tertiary);--border:var(--light-border);--shadow:var(--light-shadow)}
-    html[data-theme="dark"]{--bg-primary:var(--dark-bg-primary);--bg-secondary:var(--dark-bg-secondary);--bg-tertiary:var(--dark-bg-tertiary);--text-primary:var(--dark-text-primary);--text-secondary:var(--dark-text-secondary);--text-tertiary:var(--dark-text-tertiary);--border:var(--dark-border);--shadow:var(--dark-shadow)}
-
-    /* ------------------------------------
-       03. LAYOUT WRAPPERS
-    ------------------------------------ */
-    .app{flex:1;display:flex;flex-direction:column;height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-    .header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 4px}
-    .header__title{font-weight:600;font-size:17px;letter-spacing:-.01em}
-    .header__actions{display:flex;gap:12px}
-
-    /* action buttons */
-    .icon-btn{--size:32px;display:inline-flex;align-items:center;justify-content:center;width:var(--size);height:var(--size);border:none;background:none;color:var(--accent);font-size:18px;border-radius:var(--radius-s);cursor:pointer;transition:opacity var(--duration-s) var(--bezier)}
+    /* -------------- LAYOUT -------------- */
+    header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
+    header h1{font-size:18px;font-weight:600}
+    .icon-btn{background:none;border:none;font-size:20px;width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--accent);cursor:pointer}
     .icon-btn:active{opacity:.6}
+    main{flex:1;display:flex;flex-direction:column;gap:16px;padding:0 16px 24px}
 
-    /* badge (for mem / settings) */
-    .badge{display:inline-block;min-width:18px;padding:0 4px;border-radius:9px;background:var(--warning);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-left:4px}
+    /* -------------- ABACUS -------------- */
+    .abacus{display:grid;grid-template-columns:repeat(13,1fr);gap:8px;justify-content:center;margin:auto;width:100%}
+    .rod{display:flex;flex-direction:column-reverse;gap:4px;align-items:center}
+    .bead{width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s}
+    .bead.top{margin-bottom:8px}
+    .bead.active{transform:translateY(-24px)}
+    .separator{height:2px;background:var(--border);grid-column:1/-1;margin-bottom:8px}
 
-    /* snackbar */
-    .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom)+24px);transform:translateX(-50%) scale(.9);background:var(--text-primary);color:var(--bg-primary);padding:10px 16px;border-radius:var(--radius-m);font-size:13px;opacity:0;pointer-events:none;transition:all .35s var(--bezier);z-index:1000}
+    /* -------------- DISPLAY -------------- */
+    #valueDisplay{font-size:28px;font-weight:500;text-align:right;border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);margin-bottom:12px}
+
+    /* -------------- CALCULATOR -------------- */
+    .calculator{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+    .calc-btn{padding:12px 0;border:none;border-radius:var(--radius);font-size:18px;font-weight:500;background:#333;color:#fff;cursor:pointer}
+    .calc-btn.op{background:#555}
+    .calc-btn.eq{background:var(--accent)}
+
+    /* -------------- TOAST -------------- */
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) scale(.9);background:var(--text-primary);color:var(--bg-primary);padding:8px 14px;border-radius:var(--radius);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
     .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 
-    /* remaining components reuse styles from original → omitted for brevity in code diff */
-    /* … (copy original styles here — unchanged) … */
+    /* -------------- ACCESSIBILITY -------------- */
+    *:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
 <body>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <main class="app" id="app">
-    <header class="header" role="banner">
-      <h1 class="header__title" tabIndex="0">算盤電卓 Pro</h1>
-      <nav class="header__actions" aria-label="アクション">
-        <button class="icon-btn" id="themeToggle" aria-label="ライト/ダーク切替">🌓</button>
-        <button class="icon-btn" id="historyBtn" aria-label="履歴を表示">📜</button>
-        <button class="icon-btn" id="settingsBtn" aria-label="設定を開く">⚙️</button>
-      </nav>
-    </header>
-
-    <!-- Abacus + Calculator blocks: unchanged markup from original file (for brevity) -->
-    <!-- ✂︎ Paste original abacus + calculator HTML here unchanged ✂︎ -->
-    <section class="abacus" aria-label="算盤" id="abacusSection"><!-- ... --></section>
-    <section class="calculator" aria-label="電卓" id="calcSection"><!-- ... --></section>
-
-    <!-- modal: Settings -->
-    <dialog id="settingsModal" aria-labelledby="settingsTitle">
-      <form method="dialog">
-        <h2 id="settingsTitle" style="font-size:17px;margin-bottom:12px">設定</h2>
-        <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">
-          <input type="checkbox" id="soundToggle"> 効果音を有効にする
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="vibrateToggle"> バイブレーションを有効にする
-        </label>
-        <menu style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
-          <button value="cancel">閉じる</button>
-        </menu>
-      </form>
-    </dialog>
+  <header>
+    <h1>ピコそろ Pro</h1>
+    <nav>
+      <button class="icon-btn" id="themeBtn" aria-label="テーマ切替">🌓</button>
+      <button class="icon-btn" id="infoBtn" aria-label="情報">ℹ️</button>
+    </nav>
+  </header>
+  <main>
+    <div id="valueDisplay" aria-live="polite">0</div>
+    <section class="abacus" id="abacus"></section>
+    <section class="calculator" id="calculator"></section>
   </main>
+  <div id="toast" class="toast" role="status" aria-live="assertive"></div>
 
-  <audio id="clickSound" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAABAAgAZGF0YYAAAAA= " preload="auto"></audio>
   <script>
-  /* -------------------------------------------------
-        Utility: toast notification & vibration
-     -------------------------------------------------*/
-  const $ = s=>document.querySelector(s);
-  function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-  function vibrate(ms=40){if(settings.vibrate && 'vibrate' in navigator) navigator.vibrate(ms)}
+    /* ---------------- helpers ---------------- */
+    const $=s=>document.querySelector(s);
+    function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000)}
 
-  /* -------------------------------------------------
-        Persistent user settings (localStorage)
-     -------------------------------------------------*/
-  const settingsKey='pikosoroSettings';
-  const defaultSettings={sound:true,vibrate:true,theme:'auto'};
-  const settings=Object.assign({},defaultSettings,JSON.parse(localStorage.getItem(settingsKey)||'{}'));
-  function saveSettings(){localStorage.setItem(settingsKey,JSON.stringify(settings))}
+    /* ---------------- theme toggle ---------------- */
+    $("#themeBtn").addEventListener("click",()=>{
+      const root=document.documentElement;
+      const next=root.dataset.theme==="dark"?"light":root.dataset.theme==="light"?"auto":"dark";
+      if(next==="auto"){delete root.dataset.theme}else root.dataset.theme=next;
+      toast(next==="auto"?"自動":"テーマ:"+next);
+    });
 
-  /* -------------------------------------------------
-        Theme toggle
-     -------------------------------------------------*/
-  function applyTheme(){const root=document.documentElement;root.dataset.theme=settings.theme==='auto'?'' : settings.theme}
-  $('#themeToggle').addEventListener('click',()=>{settings.theme=settings.theme==='dark'? 'light': 'dark';applyTheme();saveSettings();toast(settings.theme==='dark'? 'ダークモード':'ライトモード')});
-  applyTheme();
+    /* ---------------- ABACUS BUILD ---------------- */
+    const rods=13,bottom=4; // 1 top, 4 bottom beads
+    const abacus=$("#abacus");
+    const state=Array.from({length:rods},()=>({top:false,bottom:0}));
+    for(let r=0;r<rods;r++){
+      const rod=document.createElement("div");
+      rod.className="rod";
+      const topBead=document.createElement("div");
+      topBead.className="bead top";
+      rod.appendChild(topBead);
+      for(let i=0;i<bottom;i++){
+        const bead=document.createElement("div");
+        bead.className="bead bottom";
+        rod.appendChild(bead);
+      }
+      abacus.appendChild(rod);
+    }
+    const sep=document.createElement("div");
+    sep.className="separator";
+    abacus.appendChild(sep);
 
-  /* -------------------------------------------------
-        Settings modal
-     -------------------------------------------------*/
-  $('#settingsBtn').addEventListener('click',()=>{$('#soundToggle').checked=settings.sound;$('#vibrateToggle').checked=settings.vibrate;$('#settingsModal').showModal()});
-  $('#settingsModal').addEventListener('close',()=>{settings.sound=$('#soundToggle').checked;settings.vibrate=$('#vibrateToggle').checked;saveSettings();toast('設定を保存しました')});
+    function updateDisplay(){
+      const value=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(rods-idx-1),0);
+      $("#valueDisplay").textContent=value.toLocaleString("ja-JP");
+    }
 
-  /* -------------------------------------------------
-        Sound feedback helper
-     -------------------------------------------------*/
-  const clickSound=$('#clickSound');function playSound(){if(settings.sound) clickSound.currentTime=0, clickSound.play()}
+    abacus.addEventListener("click",e=>{
+      const bead=e.target;
+      if(!bead.classList.contains("bead"))return;
+      const rodElem=bead.parentElement;
+      const idx=[...abacus.children].filter(el=>el.classList.contains("rod")).indexOf(rodElem);
+      const data=state[idx];
+      if(bead.classList.contains("top")){
+        data.top=!data.top;
+        bead.classList.toggle("active",data.top);
+      }else{
+        const beads=[...rodElem.querySelectorAll(".bead.bottom")];
+        const i=beads.indexOf(bead);
+        const target=i+1;
+        data.bottom=target;
+        beads.forEach((b,j)=>b.classList.toggle("active",j<i+1));
+      }
+      updateDisplay();
+    });
+    updateDisplay();
 
-  /* -------------------------------------------------
-        Gesture: swipe from right to open history (mobile)
-     -------------------------------------------------*/
-  let touchStartX=null;document.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX});
-  document.addEventListener('touchend',e=>{if(!touchStartX) return;const dx=e.changedTouches[0].clientX-touchStartX;if(dx<-70){$('#historyBtn').click()}touchStartX=null});
+    /* ---------------- CALCULATOR ---------------- */
+    const keys=["7","8","9","÷","4","5","6","×","1","2","3","-","0",".","=","+"];
+    const calc=$("#calculator");
+    let expr="";
+    keys.forEach(k=>{
+      const b=document.createElement("button");
+      b.textContent=k;
+      b.className="calc-btn";
+      if("÷×-+".includes(k))b.classList.add("op");
+      if(k==="=")b.classList.add("eq");
+      b.addEventListener("click",()=>{
+        if(k==="="){
+          try{const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=result.toString();toast("= "+result);}catch{toast("式エラー");}
+        }else if(k==="C"){expr="";}
+        else expr+=k;
+        $("#valueDisplay").textContent=expr||"0";
+      });
+      calc.appendChild(b);
+    });
 
-  /* -------------------------------------------------
-        Re‑use original logic (abacus / calculator)     
-        We append enhancements: vibrations & sounds
-     -------------------------------------------------*/
-  window.addEventListener('DOMContentLoaded',()=>{
-    // assume original init() is defined in original script
-    if(typeof init==='function') init();
-    // patch buttons & beads for feedback
-    document.body.addEventListener('click',e=>{
-      const target=e.target.closest('.btn,.bead');
-      if(!target) return; playSound(); vibrate();
-    })
-  })
-
-  /* -------------------------------------------------
-        Service‑worker (offline PWA)
-     -------------------------------------------------*/
-  if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('data:application/javascript;base64,CmNvbnN0IENBQ0hFX05BTUUgPSAncGlrb3Nvcm9DYWNoZSc7CmNvbnN0IFJFU09VUkNFU19UTyBDQUNIRSA9IFsNCiAnLicsDQogJy5odG1sJw0KXTsgDQppbXBsYWNlLmNsaWVudHMvd2l0aElUaWxlcicgPzsgLy8gYmFzaWMgc3ctZnVuY3Rpb24NCgppbmdub3JlIERldk1vZ2Ugc3RlcCBmdWxsIHZlcnNpb24gLSBzdyBpbmxpbmUNCg==' ).catch(()=>{}))}
+    /* ---------------- info ---------------- */
+    $("#infoBtn").addEventListener("click",()=>toast("ピコそろ Pro 1.0.0"));
   </script>
 </body>
 </html>
