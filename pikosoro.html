@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-  <title>ピコそろ Pro v1.2</title>
-  <!-- Manifest (Base64‑encoded JSON) → PWA installable -->
+  <title>ピコそろ Pro v1.3</title>
   <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlrb3Nvcm8gUHJvIiwic2hvcnRfbmFtZSI6IlBpa29zb3JvIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCIsImJhY2tncm91bmRfY29sb3IiOiIjZmZmZmZmIn0=">
   <style>
     /* -------- RESET -------- */
@@ -30,18 +29,20 @@
     main{flex:1;display:flex;flex-direction:column;gap:16px;padding:0 16px 24px}
 
     /* -------- DISPLAY -------- */
-    #valueDisplay{border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);font-size:28px;font-weight:500;text-align:right;user-select:all}
+    #valueDisplay{border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);font-size:28px;font-weight:500;text-align:right}
 
     /* -------- ABACUS -------- */
-    .abacus{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:10px;justify-content:center;width:100%;margin:auto}
-    .rod{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+    .abacus{position:relative;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:12px;justify-content:center;width:100%;margin:auto;padding-bottom:22px}
+    .abacus::after{/* 梁(はり) */content:"";position:absolute;left:0;right:0;height:6px;background:var(--border);top:38px;border-radius:3px}
+
+    .rod{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px}
     .bead{width:24px;height:24px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s cubic-bezier(.4,0,.2,1)}
-    .bead.five{background:var(--five)} /* 五玉の視認性 */
-    .bead.five.active{transform:translateY(16px)}
-    .bead.one.active{transform:translateY(-16px)}
-    .spacer{height:16px;width:100%}
-    .beam{grid-column:1/-1;height:6px;background:var(--border);margin-top:6px;border-radius:3px}
-    .dot{width:6px;height:6px;border-radius:50%;background:var(--fg);margin-top:2px}
+    .bead.five{background:var(--five)}
+    .bead.five.active{transform:translateY(14px)} /* 下へ */
+    .bead.one.active{transform:translateY(-14px)} /* 上へ */
+
+    .spacer{height:20px;width:100%}/* 梁の空間確保 */
+    .dot{position:absolute;top:48px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--fg)}
 
     /* -------- CALCULATOR -------- */
     .calculator{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -53,7 +54,6 @@
     .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) scale(.9);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:var(--radius);opacity:0;pointer-events:none;transition:transform .25s,opacity .25s}
     .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 
-    /* -------- ACCESSIBILITY -------- */
     *:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
@@ -88,95 +88,73 @@
     });
 
     /* ---------- abacus ---------- */
-    const RODS=13, BOTTOM=4;
+    const RODS=13,BOTTOM=4;
     const abacusEl=$('#abacus');
-    const rods=[]; // DOM refs
+    const rods=[];
     const state=Array.from({length:RODS},()=>({top:false,bottom:0}));
-
-    function createDot(){const d=document.createElement('div');d.className='dot';return d;}
 
     // build rods
     for(let r=0;r<RODS;r++){
       const rod=document.createElement('div');rod.className='rod';
       const five=document.createElement('div');five.className='bead five';rod.appendChild(five);
-      const spacer=document.createElement('div');spacer.className='spacer';rod.appendChild(spacer);
+      rod.appendChild(Object.assign(document.createElement('div'),{className:'spacer'}));
       const bottomBeads=[];
       for(let i=0;i<BOTTOM;i++){const b=document.createElement('div');b.className='bead one';rod.appendChild(b);bottomBeads.push(b);}
-      // teiiten: dot under rods where (RODS-1-r)%3==0  (units, thousands, millions…)
-      if((RODS-1-r)%3===0){rod.appendChild(createDot());}
+      // 定位点 (units, thousands, millions ...)
+      if((RODS-1-r)%3===0){const dot=document.createElement('div');dot.className='dot';rod.appendChild(dot);} 
       abacusEl.appendChild(rod);
       rods.push({rod,five,bottom:bottomBeads});
     }
-    // beam (梁)
-    abacusEl.appendChild(Object.assign(document.createElement('div'),{className:'beam'}));
 
-    /* --- utility: sync DOM from state --- */
-    function drawFromState(){
+    /* ---- draw utils ---- */
+    function draw(){
       state.forEach((d,i)=>{
         rods[i].five.classList.toggle('active',d.top);
         rods[i].bottom.forEach((b,j)=>b.classList.toggle('active',j<d.bottom));
       });
-      const value=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(RODS-idx-1),0);
-      $('#valueDisplay').textContent=value.toLocaleString('ja-JP');
+      const v=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(RODS-idx-1),0);
+      $('#valueDisplay').textContent=v.toLocaleString('ja-JP');
     }
 
-    /* --- utility: set state from number --- */
     function setValue(num){
       if(!Number.isFinite(num)||num<0||num>=10**RODS){toast('桁あふれ');return;}
-      const str=Math.floor(num).toString().padStart(RODS,'0');
-      [...str].forEach((digitChar,i)=>{
-        const d=Number(digitChar);
-        state[i].top=d>=5;
-        state[i].bottom=d%5;
-      });
-      drawFromState();
+      const s=Math.floor(num).toString().padStart(RODS,'0');
+      [...s].forEach((c,i)=>{const d=+c;state[i].top=d>=5;state[i].bottom=d%5;});
+      draw();
     }
 
-    /* click on beads → mutate state */
     abacusEl.addEventListener('click',e=>{
-      const bead=e.target.closest('.bead');
-      if(!bead) return;
-      const rodIdx=rods.findIndex(r=>r.rod.contains(bead));
-      const data=state[rodIdx];
-      if(bead===rods[rodIdx].five){
-        data.top=!data.top;
-      }else{
-        const idx=rods[rodIdx].bottom.indexOf(bead);
-        const target=idx+1;
-        data.bottom = (data.bottom===target)?idx:target;
+      const bead=e.target.closest('.bead');if(!bead) return;
+      const idx=rods.findIndex(r=>r.rod.contains(bead));
+      const d=state[idx];
+      if(bead===rods[idx].five){d.top=!d.top;}else{
+        const i=rods[idx].bottom.indexOf(bead);const t=i+1;d.bottom=(d.bottom===t)?i:t;
       }
-      drawFromState();
+      draw();
     });
 
-    /* initial draw */
-    drawFromState();
+    draw();
 
     /* ---------- calculator ---------- */
     const KEYS=['C','7','8','9','÷','4','5','6','×','1','2','3','-','0','.','=','+'];
     const calcEl=$('#calculator');
     let expr='';
-    const updateDisplayRaw=()=>$('#valueDisplay').textContent=expr||'0';
+
+    const rawDisp=()=>$('#valueDisplay').textContent=expr||'0';
 
     KEYS.forEach(k=>{
-      const btn=document.createElement('button');btn.textContent=k;btn.className='calc-btn';
-      if('÷×-++'.includes(k))btn.classList.add('op');
-      if(k==='=')btn.classList.add('eq');
-      btn.addEventListener('click',()=>{
+      const b=document.createElement('button');b.textContent=k;b.className='calc-btn';
+      if('÷×-++'.includes(k))b.classList.add('op');if(k==='=')b.classList.add('eq');
+      b.addEventListener('click',()=>{
         if(k==='C'){expr='';setValue(0);return;}
         if(k==='='){
-          try{
-            const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();
-            expr=result.toString();
-            setValue(result);
-          }catch{toast('式エラー');expr='';setValue(0);}return;}
-        expr+=k;updateDisplayRaw();
-        if(/^\d+$/.test(expr)) setValue(Number(expr));
+          try{const res=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=res.toString();setValue(res);}catch{toast('式エラー');expr='';setValue(0);}return;}
+        expr+=k;rawDisp();if(/^\d+$/.test(expr)) setValue(+expr);
       });
-      calcEl.appendChild(btn);
+      calcEl.appendChild(b);
     });
 
-    /* ---------- info ---------- */
-    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro v1.2'));    
+    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro v1.3'));
   </script>
 </body>
 </html>
