@@ -3,237 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ジャンボ宝くじ当選チャレンジ</title>
+    <title>ジャンボ宝くじ当選チャレンジ (横)</title>
     <style>
         :root {
-            --ball-size: 25px;
-            --hole-width: 50px;
-            --hole-height: 40px;
-            --level-gap: 20px;
-            --stage-padding: 20px;
-            --num-holes-per-level: 3; /* 各段の穴の数 */
+            --digit-columns: 8; /* 組2桁 + 番号6桁 */
+            --numbers-per-column: 10; /* 0-9 */
+            --column-width: clamp(40px, 10vw, 70px);
+            --hole-size: clamp(25px, 6vw, 40px);
+            --hole-gap: clamp(3px, 0.8vw, 5px);
+            --ball-size: clamp(20px, 5vw, 30px);
+            --animation-speed: 0.5s;
+            --focus-animation-speed: 0.1s;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto', 'Arial', sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #eef1f5;
-            color: #333;
+            padding: 15px;
+            background-color: #f0f2f5;
+            color: #1c1e21;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
             box-sizing: border-box;
-            overflow-x: hidden; /* 横スクロール防止 */
+            overflow-x: hidden;
         }
 
         .container {
             background-color: #fff;
-            padding: 25px 35px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            padding: clamp(20px, 5vw, 30px);
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             text-align: center;
             width: 100%;
-            max-width: 600px;
+            max-width: 900px; /* 横長なので少し広め */
         }
 
         h1 {
-            color: #1a73e8; /* Google Blue */
-            margin-bottom: 15px;
-            font-size: 2em;
+            color: #007bff;
+            margin-bottom: 10px;
+            font-size: clamp(1.6em, 4vw, 2.2em);
         }
 
         .description {
-            font-size: 0.95em;
-            color: #5f6368;
-            margin-bottom: 25px;
-            line-height: 1.6;
+            font-size: clamp(0.85em, 2.5vw, 1em);
+            color: #606770;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
 
         #winning-number-display {
-            font-size: 1.8em;
+            font-size: clamp(1.5em, 5vw, 2.5em);
             font-weight: bold;
-            color: #34a853; /* Google Green */
-            background-color: #e6f4ea;
-            padding: 12px 15px;
+            color: #28a745;
+            background-color: #e9f5ee;
+            padding: 10px 15px;
             border-radius: 8px;
-            margin-bottom: 30px;
-            border: 1px dashed #34a853;
+            margin-bottom: 25px;
+            border: 1px dashed #28a745;
             letter-spacing: 2px;
-        }
-
-        #stage-wrapper {
-            width: 100%;
-            overflow: hidden; /* ボールがステージ外にはみ出てもスクロールバーが出ないように */
-            margin-bottom: 20px;
-        }
-        
-        #stage {
-            position: relative;
-            width: calc(var(--hole-width) * var(--num-holes-per-level) + (var(--num-holes-per-level) - 1) * 10px + var(--stage-padding) * 2); /* 穴の数に応じて幅調整 */
-            margin: 20px auto;
-            padding: var(--stage-padding) 0; /* 上下のパディング */
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            border: 2px solid #dee2e6;
-            min-height: calc(5 * (var(--hole-height) + var(--level-gap)) + var(--ball-size)); /* 5段分の高さ */
-            box-sizing: content-box; /* padding を幅計算に含めない */
-        }
-
-        .level {
-            display: flex;
+            display: flex; /* For highlighting individual digits */
             justify-content: center;
-            align-items: center;
-            margin-bottom: var(--level-gap);
-            height: var(--hole-height);
         }
-        .level:last-child {
-            margin-bottom: 0;
+        .wn-digit {
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        .wn-digit.highlighted {
+            transform: scale(1.2);
+            color: #1f8237;
+            font-weight: 900;
+        }
+        .wn-hyphen {
+            margin: 0 0.2em;
+        }
+
+
+        #stage-container {
+            width: 100%;
+            overflow-x: auto; /* スマホでステージがはみ出る場合スクロール */
+            padding-bottom: 10px; /* スクロールバーとのスペース */
+        }
+
+        #stage {
+            display: flex;
+            position: relative; /* For ball positioning */
+            margin: 20px auto;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #d1d9e0;
+            padding: 15px clamp(10px, 2vw, 15px);
+            min-width: calc(var(--digit-columns) * (var(--column-width) + 5px)); /* Ensure min width for all columns */
+            justify-content: center; /* For cases where stage is wider than columns */
+        }
+
+        .digit-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 clamp(2px, 0.5vw, 5px);
+            padding: 5px 0;
+            width: var(--column-width);
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .digit-column.active {
+            background-color: #e0eaff; /* Light blue highlight for active column */
         }
 
         .hole {
-            width: var(--hole-width);
-            height: var(--hole-height);
+            width: var(--hole-size);
+            height: var(--hole-size);
             background-color: #ffffff;
             border: 2px solid #adb5bd;
-            border-radius: 8px;
+            border-radius: 50%; /* 丸い穴 */
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0 5px; /* 穴同士の間隔 */
-            box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-
-        .hole .digit {
-            font-size: 1.6em;
+            margin-bottom: var(--hole-gap);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
+            cursor: default; /* Not clickable */
+            font-size: calc(var(--hole-size) * 0.5);
             font-weight: bold;
             color: #495057;
         }
-        
-        .hole.correct-path {
-            /* ゲーム中は見えないが、デバッグや演出用 */
+        .hole:last-child {
+            margin-bottom: 0;
         }
-        .hole.hit {
-            background-color: #fff3cd; /* 黄色系 */
-            border-color: #ffeeba;
+        .hole.focus {
+            transform: scale(1.15);
+            border-color: #007bff;
+            background-color: #cfe7ff;
         }
-        .hole.hit.correct {
-            background-color: #d4edda; /* 緑系 */
-            border-color: #c3e6cb;
+        .hole.correct {
+            background-color: #d4edda !important; /* Green for correct */
+            border-color: #28a745 !important;
+            color: #155724;
         }
-
+        .hole.incorrect {
+            background-color: #f8d7da !important; /* Red for incorrect */
+            border-color: #dc3545 !important;
+            color: #721c24;
+        }
 
         #ball {
             position: absolute;
             width: var(--ball-size);
             height: var(--ball-size);
-            background-color: #ea4335; /* Google Red */
+            background-color: #ff4136; /* Red ball */
             border-radius: 50%;
-            left: 50%; /* 初期位置計算はJSで行う */
-            top: 0; /* 初期位置計算はJSで行う */
-            transform: translateX(-50%);
             z-index: 10;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            /* transition: top 0.3s linear, left 0.1s linear; JSで制御するため削除または調整 */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: transform var(--animation-speed) cubic-bezier(0.68, -0.55, 0.27, 1.55), /* Bounce ease */
+                        top var(--animation-speed) ease-in-out;
+            /* Initial position set by JS */
+            display: none; /* Initially hidden */
         }
+
 
         #start-button {
-            background-color: #1a73e8;
+            background-image: linear-gradient(to right, #007bff 0%, #0056b3 100%);
             color: white;
             border: none;
-            padding: 14px 30px;
-            font-size: 1.15em;
+            padding: clamp(10px, 2.5vw, 14px) clamp(20px, 5vw, 30px);
+            font-size: clamp(1em, 3vw, 1.15em);
             font-weight: 500;
-            border-radius: 8px;
+            border-radius: 50px; /* Pill shape */
             cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.1s ease;
+            transition: all 0.3s ease;
             margin-top: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            letter-spacing: 0.5px;
         }
-
         #start-button:hover {
-            background-color: #1765c7;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4);
         }
         #start-button:active {
-            transform: translateY(1px);
+            transform: translateY(0px);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
         }
-        
         #start-button:disabled {
+            background-image: none;
             background-color: #ced4da;
             cursor: not-allowed;
             box-shadow: none;
+            transform: none;
         }
 
         #result-display {
-            font-size: 1.6em;
+            font-size: clamp(1.4em, 4vw, 1.8em);
             font-weight: bold;
-            margin-top: 30px;
-            min-height: 35px;
+            margin-top: 25px;
+            min-height: calc(clamp(1.4em, 4vw, 1.8em) * 1.2); /* Ensure space */
         }
+        .result-clear { color: #28a745; animation: popIn 0.5s ease; }
+        .result-gameover { color: #dc3545; animation: shake 0.5s ease; }
 
-        .result-clear {
-            color: #34a853;
-            animation: pulse 1s infinite alternate;
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-
-        .result-gameover {
-            color: #ea4335;
-        }
-
-        @keyframes pulse {
-            from { transform: scale(1); opacity: 1; }
-            to   { transform: scale(1.05); opacity: 0.9; }
-        }
-
-        /* スマートフォン対応 */
-        @media (max-width: 600px) {
-            :root {
-                --ball-size: 20px;
-                --hole-width: 45px;
-                --hole-height: 35px;
-                --level-gap: 15px;
-            }
-            body {
-                padding: 10px;
-            }
-            .container {
-                padding: 20px;
-            }
-            h1 {
-                font-size: 1.7em;
-            }
-            #winning-number-display {
-                font-size: 1.4em;
-            }
-            .hole .digit {
-                font-size: 1.4em;
-            }
-            #stage {
-                width: calc(var(--hole-width) * var(--num-holes-per-level) + (var(--num-holes-per-level) - 1) * 5px + var(--stage-padding) * 2);
-            }
-            #start-button {
-                padding: 12px 25px;
-                font-size: 1.05em;
-            }
-            #result-display {
-                font-size: 1.3em;
-            }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ジャンボ宝くじ当選チャレンジ</h1>
-        <p class="description">スタートボタンを押して、運命のボールが当選番号の穴を通過できるか挑戦！ピンボールのように進むボールの行方を見守ろう！</p>
+        <p class="description">スタートボタンで運試し！ボールが当選番号の正しい穴だけを通過できるか挑戦しよう！</p>
 
         <div id="winning-number-display">--- --- ----</div>
 
-        <div id="stage-wrapper">
+        <div id="stage-container">
             <div id="stage">
-                <div id="ball"></div>
-                <!-- Levels and holes will be generated by JavaScript -->
+                <!-- Digit columns and holes will be generated by JavaScript -->
+                 <div id="ball"></div>
             </div>
         </div>
 
@@ -243,97 +232,80 @@
 
     <script>
         const winningNumbersData = [
-            '123-101234', '456-112233', '789-105678', '012-203040', '345-334455',
-            '678-500600', '901-707070', '234-888999', '567-121212', '890-343434'
+            '58-154049', '12-345678', '77-777777', '01-234567', '98-765432',
+            '33-333333', '42-001122', '69-969696', '25-808080', '80-080808'
         ];
+        const NUM_DIGIT_COLUMNS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--digit-columns'));
 
-        const NUM_LEVELS = 5;
-        const NUM_HOLES_PER_LEVEL = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--num-holes-per-level')) || 3; // CSS変数から取得
-        const BALL_FALL_SPEED = 2; // px per frame for vertical movement
-        const BALL_HORIZONTAL_SPEED_MAX = 1.5; // Max px per frame for horizontal sway
-
-        let currentWinningNumber = '';
-        let targetDigitsForLevels = []; // 各レベルの正解の数字
+        let currentWinningNumberStr = ''; // e.g., "58-154049"
+        let currentWinningDigits = [];    // e.g., ['5', '8', '1', '5', '4', '0', '4', '9']
         let gameInProgress = false;
-        let currentLevelIndex = 0;
-        let ball = { x: 0, y: 0, vx: 0, vy: BALL_FALL_SPEED };
-        let animationFrameId;
+        let currentColumnIndex = 0;
 
         const winningNumberDisplay = document.getElementById('winning-number-display');
         const stageElement = document.getElementById('stage');
         const ballElement = document.getElementById('ball');
         const startButton = document.getElementById('start-button');
         const resultDisplay = document.getElementById('result-display');
+        const stageContainer = document.getElementById('stage-container');
 
         function selectWinningNumber() {
             const randomIndex = Math.floor(Math.random() * winningNumbersData.length);
-            currentWinningNumber = winningNumbersData[randomIndex];
-            winningNumberDisplay.textContent = currentWinningNumber;
+            currentWinningNumberStr = winningNumbersData[randomIndex];
             
-            const parts = currentWinningNumber.split('-');
-            const group = parts[0]; 
-            const number = parts[1];
+            // Display with hyphen and individual spans for highlighting
+            winningNumberDisplay.innerHTML = '';
+            const parts = currentWinningNumberStr.split('-');
+            parts[0].split('').forEach(digit => {
+                const span = document.createElement('span');
+                span.classList.add('wn-digit');
+                span.textContent = digit;
+                winningNumberDisplay.appendChild(span);
+            });
+            const hyphenSpan = document.createElement('span');
+            hyphenSpan.classList.add('wn-hyphen');
+            hyphenSpan.textContent = '-';
+            winningNumberDisplay.appendChild(hyphenSpan);
+            parts[1].split('').forEach(digit => {
+                const span = document.createElement('span');
+                span.classList.add('wn-digit');
+                span.textContent = digit;
+                winningNumberDisplay.appendChild(span);
+            });
 
-            targetDigitsForLevels = [
-                group[0], group[1], group[2], number[0], number[1]
-            ].slice(0, NUM_LEVELS); // Ensure it matches NUM_LEVELS
+            currentWinningDigits = currentWinningNumberStr.replace('-', '').split('');
         }
 
         function createStage() {
-            stageElement.innerHTML = ''; // Clear previous stage (except ball)
-            stageElement.appendChild(ballElement); // Re-add ball if it was cleared
+            stageElement.innerHTML = ''; // Clear previous stage elements
+            stageElement.appendChild(ballElement); // Ensure ball is inside stage
 
-            for (let i = 0; i < NUM_LEVELS; i++) {
-                const levelDiv = document.createElement('div');
-                levelDiv.classList.add('level');
-                levelDiv.dataset.levelIndex = i;
+            for (let i = 0; i < NUM_DIGIT_COLUMNS; i++) {
+                const columnDiv = document.createElement('div');
+                columnDiv.classList.add('digit-column');
+                columnDiv.dataset.columnIndex = i;
 
-                const correctDigit = targetDigitsForLevels[i];
-                const holeNumbers = generateHoleNumbers(correctDigit);
-
-                holeNumbers.forEach((num, holeIdx) => {
+                for (let j = 0; j < 10; j++) { // 0-9 holes
                     const holeDiv = document.createElement('div');
                     holeDiv.classList.add('hole');
-                    holeDiv.dataset.isCorrect = (num === correctDigit);
-                    holeDiv.dataset.holeIndex = holeIdx;
-                    
-                    const digitSpan = document.createElement('span');
-                    digitSpan.classList.add('digit');
-                    digitSpan.textContent = num;
-                    holeDiv.appendChild(digitSpan);
-                    levelDiv.appendChild(holeDiv);
-                });
-                stageElement.appendChild(levelDiv);
+                    holeDiv.textContent = j.toString();
+                    holeDiv.dataset.value = j.toString();
+                    columnDiv.appendChild(holeDiv);
+                }
+                stageElement.appendChild(columnDiv);
             }
-        }
-
-        function generateHoleNumbers(correctDigit) {
-            const numbers = new Set();
-            numbers.add(correctDigit);
-            while (numbers.size < NUM_HOLES_PER_LEVEL) {
-                const randomDigit = Math.floor(Math.random() * 10).toString();
-                numbers.add(randomDigit);
-            }
-            // Shuffle the numbers
-            return Array.from(numbers).sort(() => Math.random() - 0.5);
         }
         
         function resetBall() {
-            ball.y = 0; // Stage top
-            ball.x = stageElement.offsetWidth / 2; // Stage center
-            ballElement.style.left = `${ball.x}px`;
-            ballElement.style.top = `${ball.y - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ball-size')) / 2)}px`; // Place above first level
-            ball.vy = BALL_FALL_SPEED;
-            ball.vx = (Math.random() - 0.5) * BALL_HORIZONTAL_SPEED_MAX * 2; // Initial horizontal push
-            currentLevelIndex = 0;
+            ballElement.style.display = 'none'; // Hide until game starts
+            currentColumnIndex = 0;
+            // Position will be set when moving to the first column
         }
 
         function initializeGame() {
             gameInProgress = false;
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            
             selectWinningNumber();
-            createStage(); // Stage depends on winning number digits
+            createStage();
             resetBall();
             
             resultDisplay.textContent = '';
@@ -341,165 +313,144 @@
             startButton.disabled = false;
             startButton.textContent = 'スタート';
 
-            // Reset visual feedback on holes
-            document.querySelectorAll('.hole').forEach(h => {
-                h.classList.remove('hit', 'correct');
+            document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
+            document.querySelectorAll('.wn-digit.highlighted').forEach(d => d.classList.remove('highlighted'));
+        }
+
+        async function moveToColumn(columnIndex) {
+            return new Promise(resolve => {
+                document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
+                const columns = stageElement.querySelectorAll('.digit-column');
+                if (columnIndex >= columns.length) {
+                    resolve(false); // Should not happen if logic is correct
+                    return;
+                }
+                const targetColumn = columns[columnIndex];
+                targetColumn.classList.add('active');
+
+                const columnRect = targetColumn.getBoundingClientRect();
+                const stageRect = stageElement.getBoundingClientRect();
+
+                // Calculate ball's target X (center of column) and Y (aligned with middle hole visually)
+                const ballTargetX = columnRect.left - stageRect.left + (columnRect.width / 2) - (ballElement.offsetWidth / 2);
+                
+                // Initially position ball above the column, then drop into focus
+                const initialTopOffset = -ballElement.offsetHeight * 2; // Start above stage
+                const targetHoleForY = targetColumn.querySelectorAll('.hole')[Math.floor(10/2)]; // Middle hole for Y reference
+                const holeRect = targetHoleForY.getBoundingClientRect();
+                const ballTargetY = holeRect.top - stageRect.top + (holeRect.height / 2) - (ballElement.offsetHeight / 2);
+
+                if (columnIndex === 0 && ballElement.style.display === 'none') { // First move, make ball appear
+                    ballElement.style.transform = `translateX(${ballTargetX}px)`;
+                    ballElement.style.top = `${initialTopOffset}px`;
+                    ballElement.style.display = 'block';
+                    // Force reflow
+                    ballElement.offsetHeight; 
+                }
+                
+                ballElement.style.transform = `translateX(${ballTargetX}px)`;
+                ballElement.style.top = `${ballTargetY}px`;
+
+                // Scroll stage if needed
+                const targetScrollLeft = targetColumn.offsetLeft - stageContainer.offsetWidth / 2 + targetColumn.offsetWidth / 2;
+                stageContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+
+
+                setTimeout(resolve, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-speed').replace('s','')) * 1000);
             });
         }
 
-        function updateBallPosition() {
-            // Apply gravity (vertical movement)
-            ball.y += ball.vy;
+        async function selectHoleInColumn(columnIndex) {
+            return new Promise(resolve => {
+                const column = stageElement.querySelectorAll('.digit-column')[columnIndex];
+                const holes = Array.from(column.querySelectorAll('.hole'));
+                const correctDigit = currentWinningDigits[columnIndex];
+                let focusCount = 0;
+                const maxFocusCount = 10 + Math.floor(Math.random() * 10); // Randomize "roulette" spins
 
-            // Apply horizontal movement and some randomness/sway
-            ball.x += ball.vx;
-            // Add a slight random sway to vx to simulate pinball randomness
-            ball.vx += (Math.random() - 0.5) * 0.3; 
-            // Dampen horizontal speed over time or if it gets too high
-            ball.vx *= 0.98; 
-            if (Math.abs(ball.vx) > BALL_HORIZONTAL_SPEED_MAX * 1.5) {
-                ball.vx = BALL_HORIZONTAL_SPEED_MAX * 1.5 * Math.sign(ball.vx);
-            }
+                // Clear previous focus/results
+                holes.forEach(h => h.classList.remove('focus', 'correct', 'incorrect'));
 
+                let currentFocusIndex = Math.floor(Math.random() * 10);
 
-            // Wall collision (horizontal)
-            const ballRadius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ball-size')) / 2;
-            if (ball.x - ballRadius < 0) {
-                ball.x = ballRadius;
-                ball.vx *= -0.8; // Bounce with some energy loss
-            } else if (ball.x + ballRadius > stageElement.offsetWidth) {
-                ball.x = stageElement.offsetWidth - ballRadius;
-                ball.vx *= -0.8; // Bounce
-            }
-            
-            ballElement.style.top = `${ball.y - ballRadius}px`;
-            ballElement.style.left = `${ball.x}px`; // translateX(-50%) is already applied via CSS
-        }
-
-        function checkCollisionWithLevel() {
-            if (currentLevelIndex >= NUM_LEVELS) return null; // All levels passed
-
-            const levels = stageElement.querySelectorAll('.level');
-            const targetLevelElement = levels[currentLevelIndex];
-            if (!targetLevelElement) return null;
-
-            const levelRect = targetLevelElement.getBoundingClientRect();
-            const stageRect = stageElement.getBoundingClientRect(); // Stage's global position
-            const ballRect = ballElement.getBoundingClientRect(); // Ball's global position
-
-            // Check if ball's bottom edge has reached the top of the current level's holes
-            const levelTopY = levelRect.top - stageRect.top + (levelRect.height / 2); // Center Y of holes, relative to stage
-
-            if (ballRect.bottom - stageRect.top >= levelTopY) {
-                const holes = targetLevelElement.querySelectorAll('.hole');
-                for (let i = 0; i < holes.length; i++) {
-                    const holeElement = holes[i];
-                    const holeRect = holeElement.getBoundingClientRect();
-
-                    // Check if ball's center X is within this hole's X-range
-                    if (ballRect.left + ballRect.width / 2 >= holeRect.left &&
-                        ballRect.left + ballRect.width / 2 <= holeRect.right) {
+                const intervalId = setInterval(() => {
+                    holes.forEach(h => h.classList.remove('focus'));
+                    holes[currentFocusIndex].classList.add('focus');
+                    
+                    focusCount++;
+                    if (focusCount >= maxFocusCount) {
+                        clearInterval(intervalId);
+                        // Final stop: on a random hole (for game mechanic)
+                        const selectedHoleIndex = Math.floor(Math.random() * 10);
+                        const selectedHole = holes[selectedHoleIndex];
                         
-                        // Ball entered this hole
-                        holeElement.classList.add('hit');
-                        if (holeElement.dataset.isCorrect === 'true') {
-                             holeElement.classList.add('correct');
-                        }
-                        return holeElement;
+                        holes.forEach(h => h.classList.remove('focus'));
+                        selectedHole.classList.add('focus'); // Briefly show final selection
+
+                        setTimeout(() => {
+                            const isCorrect = (selectedHole.dataset.value === correctDigit);
+                            selectedHole.classList.add(isCorrect ? 'correct' : 'incorrect');
+                            if(isCorrect) {
+                                const wnDigits = winningNumberDisplay.querySelectorAll('.wn-digit');
+                                if(wnDigits[columnIndex]) wnDigits[columnIndex].classList.add('highlighted');
+                            }
+                            resolve(isCorrect);
+                        }, 300); // Show final focus briefly before result
+                    } else {
+                        currentFocusIndex = (currentFocusIndex + 1) % 10;
                     }
-                }
-                // If ball passed level height but didn't enter any hole (e.g., hit a peg, though pegs are not explicitly modeled here)
-                // For simplicity, if it's at the level of holes and not in one, it's a miss.
-                // This part might need refinement if pegs/obstacles are added.
-                // For now, we assume it *must* fall into one of the holes if aligned.
-                // If it's misaligned due to extreme vx, it might "miss" all holes. In that case, consider it a game over.
-                const isBallHorizontallyOverAnyHole = Array.from(holes).some(h => {
-                    const hr = h.getBoundingClientRect();
-                    return ballRect.left + ballRect.width / 2 >= hr.left && ballRect.left + ballRect.width / 2 <= hr.right;
-                });
-
-                if (!isBallHorizontallyOverAnyHole) {
-                    // Ball is at level height but not over any hole, treat as game over
-                    return { dataset: { isCorrect: 'false' } }; // Mock a "wrong" hole
-                }
-
-            }
-            return null; // No collision with current level's holes yet
+                }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--focus-animation-speed').replace('s','')) * 1000);
+            });
         }
         
-        function gameLoop() {
-            if (!gameInProgress) return;
+        async function startGameLoop() {
+            for (let i = 0; i < NUM_DIGIT_COLUMNS; i++) {
+                currentColumnIndex = i;
+                await moveToColumn(i);
+                const isCorrect = await selectHoleInColumn(i);
 
-            updateBallPosition();
-            const enteredHole = checkCollisionWithLevel();
-
-            if (enteredHole) {
-                if (enteredHole.dataset.isCorrect === 'true') {
-                    currentLevelIndex++;
-                    if (currentLevelIndex >= NUM_LEVELS) {
-                        endGame(true); // All levels cleared
-                    } else {
-                        // Move to next level: Reset ball slightly above the new current level
-                        const nextLevelElement = stageElement.querySelectorAll('.level')[currentLevelIndex];
-                        const holeCenterX = enteredHole.offsetLeft + enteredHole.offsetWidth / 2;
-                        
-                        ball.y = nextLevelElement.offsetTop - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ball-size')) / 2 - 5; // Start slightly above
-                        ball.x = holeCenterX; // Align with the hole it just passed through for a smoother visual
-                        ball.vy = BALL_FALL_SPEED; // Reset vertical speed
-                        ball.vx = (Math.random() - 0.5) * BALL_HORIZONTAL_SPEED_MAX; // Give a new small horizontal push
-                        
-                        // Brief pause or visual cue before next drop? (Optional)
-                        animationFrameId = requestAnimationFrame(gameLoop);
-                    }
-                } else {
-                    endGame(false); // Wrong hole
+                if (!isCorrect) {
+                    endGame(false);
+                    return;
                 }
-            } else {
-                // If ball falls off bottom of stage without clearing all levels
-                const ballRadius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ball-size')) / 2;
-                if (ball.y - ballRadius > stageElement.offsetHeight) {
-                     endGame(false); // Fell off stage
-                } else {
-                    animationFrameId = requestAnimationFrame(gameLoop);
-                }
+                // Add a slight delay before moving to the next column for better pacing
+                await new Promise(r => setTimeout(r, 300)); 
             }
+            endGame(true); // All columns passed
         }
 
         function startGame() {
             if (gameInProgress) return;
             
             if (startButton.textContent === 'リトライ') {
-                initializeGame(); // This will also call createStage and resetBall
+                initializeGame();
             }
-            // Ensure stage is ready before starting game loop
-            // createStage(); is now part of initializeGame for retries
-
+            // Initialize Game ensures fresh state
+            
             gameInProgress = true;
             startButton.disabled = true;
             resultDisplay.textContent = '';
             resultDisplay.className = '';
-
-            // Reset visual feedback on holes
-            document.querySelectorAll('.hole').forEach(h => {
-                h.classList.remove('hit', 'correct');
-            });
             
-            resetBall(); // Ensure ball is at start position for this attempt
-            animationFrameId = requestAnimationFrame(gameLoop);
+            startGameLoop();
         }
 
         function endGame(isClear) {
             gameInProgress = false;
-            cancelAnimationFrame(animationFrameId);
             startButton.disabled = false;
             startButton.textContent = 'リトライ';
-
+            
             if (isClear) {
-                resultDisplay.textContent = '🎉 クリア（当選）！ 🎉';
+                resultDisplay.textContent = '🎉 全桁クリア！当選！ 🎉';
                 resultDisplay.className = 'result-clear';
             } else {
                 resultDisplay.textContent = '残念！ゲームオーバー';
                 resultDisplay.className = 'result-gameover';
+                // Optionally highlight the failed digit column or ball
+                const columns = stageElement.querySelectorAll('.digit-column');
+                if(columns[currentColumnIndex]) {
+                    // columns[currentColumnIndex].style.backgroundColor = '#f8d7da'; // Example
+                }
             }
         }
 
@@ -507,12 +458,7 @@
         startButton.addEventListener('click', startGame);
 
         // Initial Setup
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeGame(); // Initial load setup
-            // Adjust stage width dynamically based on CSS variables if needed after styles are fully loaded.
-            // This is now handled by reading CSS var for NUM_HOLES_PER_LEVEL at the top.
-        });
-
+        document.addEventListener('DOMContentLoaded', initializeGame);
     </script>
 </body>
 </html>
