@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ジャンボ宝くじ当選チャレンジ (横)</title>
+    <title>ジャンボ宝くじ当選チャレンジ (横・改)</title>
     <style>
         :root {
             --digit-columns: 8; /* 組2桁 + 番号6桁 */
             --numbers-per-column: 10; /* 0-9 */
-            --column-width: clamp(40px, 10vw, 70px);
-            --hole-size: clamp(25px, 6vw, 40px);
-            --hole-gap: clamp(3px, 0.8vw, 5px);
-            --ball-size: clamp(20px, 5vw, 30px);
-            --animation-speed: 0.5s;
-            --focus-animation-speed: 0.1s;
+            --column-width: clamp(40px, 9vw, 65px);
+            --hole-size: clamp(30px, 7vw, 45px); /* 少し大きく */
+            --hole-gap: clamp(4px, 1vw, 6px);
+            --column-focus-time: 0.3s;
+            --hole-selection-speed: 75ms; /* 穴の選択アニメーション速度 */
+            --result-feedback-time: 0.5s;
         }
 
         body {
-            font-family: 'Roboto', 'Arial', sans-serif;
+            font-family: 'Noto Sans JP', 'Arial', sans-serif; /* 日本語フォント優先 */
             margin: 0;
             padding: 15px;
-            background-color: #f0f2f5;
-            color: #1c1e21;
+            background-color: #f4f6f9; /* やや明るい背景 */
+            color: #333;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -32,197 +32,224 @@
 
         .container {
             background-color: #fff;
-            padding: clamp(20px, 5vw, 30px);
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: clamp(20px, 5vw, 35px);
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
             text-align: center;
             width: 100%;
-            max-width: 900px; /* 横長なので少し広め */
+            max-width: 950px;
         }
 
         h1 {
-            color: #007bff;
-            margin-bottom: 10px;
-            font-size: clamp(1.6em, 4vw, 2.2em);
+            color: #1d4ed8; /* 濃いめの青 */
+            margin-bottom: 12px;
+            font-size: clamp(1.7em, 4.5vw, 2.4em);
+            font-weight: 700;
         }
 
         .description {
-            font-size: clamp(0.85em, 2.5vw, 1em);
-            color: #606770;
-            margin-bottom: 20px;
-            line-height: 1.5;
+            font-size: clamp(0.9em, 2.6vw, 1.05em);
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
         }
 
-        #winning-number-display {
-            font-size: clamp(1.5em, 5vw, 2.5em);
-            font-weight: bold;
-            color: #28a745;
-            background-color: #e9f5ee;
-            padding: 10px 15px;
+        #winning-number-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #eef2ff; /* 薄い青紫系 */
             border-radius: 8px;
-            margin-bottom: 25px;
-            border: 1px dashed #28a745;
-            letter-spacing: 2px;
-            display: flex; /* For highlighting individual digits */
-            justify-content: center;
+            border: 1px solid #c7d2fe;
         }
-        .wn-digit {
+        #winning-number-info .lottery-name {
+            font-size: clamp(0.9em, 2.8vw, 1.1em);
+            color: #4338ca; /* 紫系 */
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+        #winning-number-info .lottery-details {
+            font-size: clamp(1.3em, 4vw, 2em);
+            font-weight: 700;
+            color: #1e40af; /* やや濃い青 */
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; /* スマホでの改行考慮 */
+        }
+        .wn-part {
+            margin: 0 0.1em;
             transition: transform 0.3s ease, color 0.3s ease;
         }
-        .wn-digit.highlighted {
-            transform: scale(1.2);
-            color: #1f8237;
-            font-weight: 900;
+        .wn-part.highlighted {
+            transform: scale(1.15) translateY(-2px);
+            color: #059669; /* 濃い緑 (成功時) */
+            text-shadow: 0 0 5px rgba(5, 150, 105, 0.3);
         }
-        .wn-hyphen {
-            margin: 0 0.2em;
+        .wn-group-label, .wn-number-label {
+            font-size: 0.7em;
+            font-weight: normal;
+            margin: 0 0.3em;
+            color: #666;
         }
 
 
         #stage-container {
             width: 100%;
-            overflow-x: auto; /* スマホでステージがはみ出る場合スクロール */
-            padding-bottom: 10px; /* スクロールバーとのスペース */
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         #stage {
             display: flex;
-            position: relative; /* For ball positioning */
-            margin: 20px auto;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #d1d9e0;
-            padding: 15px clamp(10px, 2vw, 15px);
-            min-width: calc(var(--digit-columns) * (var(--column-width) + 5px)); /* Ensure min width for all columns */
-            justify-content: center; /* For cases where stage is wider than columns */
+            position: relative;
+            margin: 10px auto;
+            background-color: #e9ecef; /* ステージ背景 */
+            border-radius: 10px;
+            border: 1px solid #ced4da;
+            padding: clamp(10px, 2vw, 15px) clamp(10px, 2vw, 20px);
+            min-width: calc(var(--digit-columns) * (var(--column-width) + 5px));
+            justify-content: center;
         }
 
         .digit-column {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 0 clamp(2px, 0.5vw, 5px);
-            padding: 5px 0;
+            margin: 0 clamp(2px, 0.6vw, 5px);
+            padding: 8px 0;
             width: var(--column-width);
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
+            border-radius: 6px;
+            background-color: #fff;
+            border: 2px solid transparent; /* For active state border */
+            transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+            position: relative; /* For pseudo-elements if needed */
         }
         .digit-column.active {
-            background-color: #e0eaff; /* Light blue highlight for active column */
+            border-color: #3b82f6; /* 目立つ青 */
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
         }
+        .digit-column.active::before { /* Optional: Arrow indicator */
+            content: '▼';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #3b82f6;
+            font-size: 14px;
+        }
+
 
         .hole {
             width: var(--hole-size);
             height: var(--hole-size);
-            background-color: #ffffff;
-            border: 2px solid #adb5bd;
-            border-radius: 50%; /* 丸い穴 */
+            background-color: #f8f9fa;
+            border: 1px solid #d1d9e0;
+            border-radius: 8px; /* 四角丸 */
             display: flex;
             justify-content: center;
             align-items: center;
             margin-bottom: var(--hole-gap);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
-            cursor: default; /* Not clickable */
-            font-size: calc(var(--hole-size) * 0.5);
-            font-weight: bold;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            font-size: calc(var(--hole-size) * 0.55);
+            font-weight: 600;
             color: #495057;
+            user-select: none;
         }
-        .hole:last-child {
-            margin-bottom: 0;
-        }
-        .hole.focus {
-            transform: scale(1.15);
-            border-color: #007bff;
-            background-color: #cfe7ff;
-        }
-        .hole.correct {
-            background-color: #d4edda !important; /* Green for correct */
-            border-color: #28a745 !important;
-            color: #155724;
-        }
-        .hole.incorrect {
-            background-color: #f8d7da !important; /* Red for incorrect */
-            border-color: #dc3545 !important;
-            color: #721c24;
-        }
+        .hole:last-child { margin-bottom: 0; }
 
-        #ball {
-            position: absolute;
-            width: var(--ball-size);
-            height: var(--ball-size);
-            background-color: #ff4136; /* Red ball */
-            border-radius: 50%;
-            z-index: 10;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            transition: transform var(--animation-speed) cubic-bezier(0.68, -0.55, 0.27, 1.55), /* Bounce ease */
-                        top var(--animation-speed) ease-in-out;
-            /* Initial position set by JS */
-            display: none; /* Initially hidden */
+        .hole.focus { /* 選択中の穴のスタイル */
+            transform: scale(1.1);
+            border-color: #60a5fa; /* 明るい青 */
+            background-color: #eff6ff;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+            color: #1d4ed8;
+        }
+        .hole.correct { /* 正解の穴のスタイル */
+            background-color: #d1fae5 !important; /* 濃い緑の薄い版 */
+            border-color: #10b981 !important; /* エメラルドグリーン */
+            color: #047857;
+            transform: scale(1.15) !important;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.6) !important;
+        }
+        .hole.incorrect { /* 不正解の穴のスタイル */
+            background-color: #fee2e2 !important; /* 濃い赤の薄い版 */
+            border-color: #f87171 !important; /* 明るい赤 */
+            color: #b91c1c;
+            transform: scale(1.05) !important;
+            box-shadow: 0 0 12px rgba(248, 113, 113, 0.6) !important;
         }
 
 
         #start-button {
-            background-image: linear-gradient(to right, #007bff 0%, #0056b3 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
             color: white;
             border: none;
-            padding: clamp(10px, 2.5vw, 14px) clamp(20px, 5vw, 30px);
-            font-size: clamp(1em, 3vw, 1.15em);
-            font-weight: 500;
-            border-radius: 50px; /* Pill shape */
+            padding: clamp(12px, 3vw, 16px) clamp(25px, 6vw, 35px);
+            font-size: clamp(1.05em, 3.2vw, 1.25em);
+            font-weight: 600;
+            border-radius: 50px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic transition */
+            margin-top: 25px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
             letter-spacing: 0.5px;
         }
         #start-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 7px 20px rgba(59, 130, 246, 0.45);
         }
         #start-button:active {
-            transform: translateY(0px);
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
         }
         #start-button:disabled {
-            background-image: none;
-            background-color: #ced4da;
+            background: #d1d5db; /* グレー */
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
         }
 
         #result-display {
-            font-size: clamp(1.4em, 4vw, 1.8em);
-            font-weight: bold;
-            margin-top: 25px;
-            min-height: calc(clamp(1.4em, 4vw, 1.8em) * 1.2); /* Ensure space */
+            font-size: clamp(1.5em, 4.2vw, 2em);
+            font-weight: 700;
+            margin-top: 30px;
+            min-height: calc(clamp(1.5em, 4.2vw, 2em) * 1.3);
         }
-        .result-clear { color: #28a745; animation: popIn 0.5s ease; }
-        .result-gameover { color: #dc3545; animation: shake 0.5s ease; }
+        .result-clear { color: #059669; animation: triumphBounce 0.8s ease-out; }
+        .result-gameover { color: #dc2626; animation: gentleShake 0.6s ease-in-out; }
 
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes triumphBounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-15px) scale(1.1);}
+            60% {transform: translateY(-7px) scale(1.05);}
         }
-        @keyframes shake {
+        @keyframes gentleShake {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ジャンボ宝くじ当選チャレンジ</h1>
-        <p class="description">スタートボタンで運試し！ボールが当選番号の正しい穴だけを通過できるか挑戦しよう！</p>
+        <p class="description">スタートボタンで運命の抽選開始！<br>表示された当選番号の各桁が、スロットの数字と一致するか挑戦しよう！</p>
 
-        <div id="winning-number-display">--- --- ----</div>
+        <div id="winning-number-info">
+            <span class="lottery-name">取得中...</span>
+            <div class="lottery-details">
+                <!-- JSで生成: 例: <span class="wn-part">5</span><span class="wn-part">8</span><span class="wn-group-label">組</span> ... -->
+            </div>
+        </div>
 
         <div id="stage-container">
             <div id="stage">
                 <!-- Digit columns and holes will be generated by JavaScript -->
-                 <div id="ball"></div>
             </div>
         </div>
 
@@ -232,60 +259,77 @@
 
     <script>
         const winningNumbersData = [
-            '58-154049', '12-345678', '77-777777', '01-234567', '98-765432',
-            '33-333333', '42-001122', '69-969696', '25-808080', '80-080808'
+            { kai: '第1003回', name: '全国自治宝くじ（ドリームジャンボ宝くじ）', group: '58', number: '154049' },
+            { kai: '第993回', name: '全国自治宝くじ（年末ジャンボ宝くじ）', group: '12', number: '345678' },
+            { kai: '第979回', name: '全国自治宝くじ（サマージャンボ宝くじ）', group: '77', number: '777777' },
+            { kai: '第1000回', name: '全国自治宝くじ（年末ジャンボミニ）', group: '01', number: '234567' },
+            { kai: '第985回', name: '全国自治宝くじ（ハロウィンジャンボ宝くじ）', group: '98', number: '765432' },
         ];
         const NUM_DIGIT_COLUMNS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--digit-columns'));
 
-        let currentWinningNumberStr = ''; // e.g., "58-154049"
+        let currentWinningData = {};
         let currentWinningDigits = [];    // e.g., ['5', '8', '1', '5', '4', '0', '4', '9']
         let gameInProgress = false;
         let currentColumnIndex = 0;
 
-        const winningNumberDisplay = document.getElementById('winning-number-display');
+        const lotteryNameDisplay = document.querySelector('#winning-number-info .lottery-name');
+        const lotteryDetailsDisplay = document.querySelector('#winning-number-info .lottery-details');
         const stageElement = document.getElementById('stage');
-        const ballElement = document.getElementById('ball');
         const startButton = document.getElementById('start-button');
         const resultDisplay = document.getElementById('result-display');
         const stageContainer = document.getElementById('stage-container');
 
         function selectWinningNumber() {
             const randomIndex = Math.floor(Math.random() * winningNumbersData.length);
-            currentWinningNumberStr = winningNumbersData[randomIndex];
+            currentWinningData = winningNumbersData[randomIndex];
             
-            // Display with hyphen and individual spans for highlighting
-            winningNumberDisplay.innerHTML = '';
-            const parts = currentWinningNumberStr.split('-');
-            parts[0].split('').forEach(digit => {
+            lotteryNameDisplay.textContent = `${currentWinningData.kai} ${currentWinningData.name}`;
+            
+            lotteryDetailsDisplay.innerHTML = ''; // Clear previous
+            const groupDigits = currentWinningData.group.split('');
+            const numberDigits = currentWinningData.number.split('');
+
+            groupDigits.forEach(digit => {
                 const span = document.createElement('span');
-                span.classList.add('wn-digit');
+                span.classList.add('wn-part');
                 span.textContent = digit;
-                winningNumberDisplay.appendChild(span);
+                lotteryDetailsDisplay.appendChild(span);
             });
-            const hyphenSpan = document.createElement('span');
-            hyphenSpan.classList.add('wn-hyphen');
-            hyphenSpan.textContent = '-';
-            winningNumberDisplay.appendChild(hyphenSpan);
-            parts[1].split('').forEach(digit => {
+            
+            const groupLabel = document.createElement('span');
+            groupLabel.classList.add('wn-group-label');
+            groupLabel.textContent = '組';
+            lotteryDetailsDisplay.appendChild(groupLabel);
+
+            // Add a non-breaking space for better visual separation if needed on small screens
+            const spacer = document.createElement('span');
+            spacer.innerHTML = ' '; 
+            lotteryDetailsDisplay.appendChild(spacer);
+
+            numberDigits.forEach(digit => {
                 const span = document.createElement('span');
-                span.classList.add('wn-digit');
+                span.classList.add('wn-part');
                 span.textContent = digit;
-                winningNumberDisplay.appendChild(span);
+                lotteryDetailsDisplay.appendChild(span);
             });
 
-            currentWinningDigits = currentWinningNumberStr.replace('-', '').split('');
+            const numberLabel = document.createElement('span');
+            numberLabel.classList.add('wn-number-label');
+            numberLabel.textContent = '番';
+            lotteryDetailsDisplay.appendChild(numberLabel);
+
+            currentWinningDigits = [...groupDigits, ...numberDigits];
         }
 
         function createStage() {
-            stageElement.innerHTML = ''; // Clear previous stage elements
-            stageElement.appendChild(ballElement); // Ensure ball is inside stage
+            stageElement.innerHTML = ''; 
 
             for (let i = 0; i < NUM_DIGIT_COLUMNS; i++) {
                 const columnDiv = document.createElement('div');
                 columnDiv.classList.add('digit-column');
                 columnDiv.dataset.columnIndex = i;
 
-                for (let j = 0; j < 10; j++) { // 0-9 holes
+                for (let j = 0; j < 10; j++) { 
                     const holeDiv = document.createElement('div');
                     holeDiv.classList.add('hole');
                     holeDiv.textContent = j.toString();
@@ -296,67 +340,40 @@
             }
         }
         
-        function resetBall() {
-            ballElement.style.display = 'none'; // Hide until game starts
-            currentColumnIndex = 0;
-            // Position will be set when moving to the first column
-        }
-
         function initializeGame() {
             gameInProgress = false;
             selectWinningNumber();
             createStage();
-            resetBall();
             
             resultDisplay.textContent = '';
             resultDisplay.className = '';
             startButton.disabled = false;
             startButton.textContent = 'スタート';
+            currentColumnIndex = 0;
 
             document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
-            document.querySelectorAll('.wn-digit.highlighted').forEach(d => d.classList.remove('highlighted'));
+            document.querySelectorAll('.wn-part.highlighted').forEach(d => d.classList.remove('highlighted'));
+            document.querySelectorAll('.hole.correct, .hole.incorrect, .hole.focus').forEach(h => {
+                h.classList.remove('correct', 'incorrect', 'focus');
+            });
         }
 
-        async function moveToColumn(columnIndex) {
+        async function focusColumn(columnIndex) {
             return new Promise(resolve => {
                 document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
                 const columns = stageElement.querySelectorAll('.digit-column');
                 if (columnIndex >= columns.length) {
-                    resolve(false); // Should not happen if logic is correct
+                    resolve(false); 
                     return;
                 }
                 const targetColumn = columns[columnIndex];
                 targetColumn.classList.add('active');
 
-                const columnRect = targetColumn.getBoundingClientRect();
-                const stageRect = stageElement.getBoundingClientRect();
-
-                // Calculate ball's target X (center of column) and Y (aligned with middle hole visually)
-                const ballTargetX = columnRect.left - stageRect.left + (columnRect.width / 2) - (ballElement.offsetWidth / 2);
-                
-                // Initially position ball above the column, then drop into focus
-                const initialTopOffset = -ballElement.offsetHeight * 2; // Start above stage
-                const targetHoleForY = targetColumn.querySelectorAll('.hole')[Math.floor(10/2)]; // Middle hole for Y reference
-                const holeRect = targetHoleForY.getBoundingClientRect();
-                const ballTargetY = holeRect.top - stageRect.top + (holeRect.height / 2) - (ballElement.offsetHeight / 2);
-
-                if (columnIndex === 0 && ballElement.style.display === 'none') { // First move, make ball appear
-                    ballElement.style.transform = `translateX(${ballTargetX}px)`;
-                    ballElement.style.top = `${initialTopOffset}px`;
-                    ballElement.style.display = 'block';
-                    // Force reflow
-                    ballElement.offsetHeight; 
-                }
-                
-                ballElement.style.transform = `translateX(${ballTargetX}px)`;
-                ballElement.style.top = `${ballTargetY}px`;
-
                 // Scroll stage if needed
                 const targetScrollLeft = targetColumn.offsetLeft - stageContainer.offsetWidth / 2 + targetColumn.offsetWidth / 2;
                 stageContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
-
-                setTimeout(resolve, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-speed').replace('s','')) * 1000);
+                setTimeout(resolve, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--column-focus-time').replace('s','')) * 1000);
             });
         }
 
@@ -365,13 +382,15 @@
                 const column = stageElement.querySelectorAll('.digit-column')[columnIndex];
                 const holes = Array.from(column.querySelectorAll('.hole'));
                 const correctDigit = currentWinningDigits[columnIndex];
+                
                 let focusCount = 0;
-                const maxFocusCount = 10 + Math.floor(Math.random() * 10); // Randomize "roulette" spins
+                const minSpins = 15; // Minimum "roulette" effect
+                const randomSpins = Math.floor(Math.random() * 10);
+                const maxFocusCount = minSpins + randomSpins;
 
-                // Clear previous focus/results
                 holes.forEach(h => h.classList.remove('focus', 'correct', 'incorrect'));
 
-                let currentFocusIndex = Math.floor(Math.random() * 10);
+                let currentFocusIndex = Math.floor(Math.random() * 10); // Start focus randomly
 
                 const intervalId = setInterval(() => {
                     holes.forEach(h => h.classList.remove('focus'));
@@ -380,41 +399,44 @@
                     focusCount++;
                     if (focusCount >= maxFocusCount) {
                         clearInterval(intervalId);
-                        // Final stop: on a random hole (for game mechanic)
+                        // Final "selection" - this is where the luck/gameplay happens
+                        // For this game, we'll make it truly random for the player.
                         const selectedHoleIndex = Math.floor(Math.random() * 10);
                         const selectedHole = holes[selectedHoleIndex];
                         
-                        holes.forEach(h => h.classList.remove('focus'));
-                        selectedHole.classList.add('focus'); // Briefly show final selection
+                        holes.forEach(h => h.classList.remove('focus')); // Clear all focus
+                        selectedHole.classList.add('focus'); // Highlight the "selected" one briefly
 
                         setTimeout(() => {
                             const isCorrect = (selectedHole.dataset.value === correctDigit);
+                            selectedHole.classList.remove('focus'); // Remove general focus before applying result style
                             selectedHole.classList.add(isCorrect ? 'correct' : 'incorrect');
+                            
                             if(isCorrect) {
-                                const wnDigits = winningNumberDisplay.querySelectorAll('.wn-digit');
-                                if(wnDigits[columnIndex]) wnDigits[columnIndex].classList.add('highlighted');
+                                const wnParts = lotteryDetailsDisplay.querySelectorAll('.wn-part');
+                                if(wnParts[columnIndex]) wnParts[columnIndex].classList.add('highlighted');
                             }
                             resolve(isCorrect);
-                        }, 300); // Show final focus briefly before result
+                        }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--result-feedback-time').replace('s','')) * 500); // Time to show result color
                     } else {
                         currentFocusIndex = (currentFocusIndex + 1) % 10;
                     }
-                }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--focus-animation-speed').replace('s','')) * 1000);
+                }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hole-selection-speed').replace('ms','')));
             });
         }
         
         async function startGameLoop() {
             for (let i = 0; i < NUM_DIGIT_COLUMNS; i++) {
                 currentColumnIndex = i;
-                await moveToColumn(i);
+                await focusColumn(i);
                 const isCorrect = await selectHoleInColumn(i);
 
                 if (!isCorrect) {
                     endGame(false);
                     return;
                 }
-                // Add a slight delay before moving to the next column for better pacing
-                await new Promise(r => setTimeout(r, 300)); 
+                // Add a slight delay for pacing after correct selection
+                await new Promise(r => setTimeout(r, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--result-feedback-time').replace('s','')) * 1000 * 0.6));
             }
             endGame(true); // All columns passed
         }
@@ -425,13 +447,20 @@
             if (startButton.textContent === 'リトライ') {
                 initializeGame();
             }
-            // Initialize Game ensures fresh state
             
             gameInProgress = true;
             startButton.disabled = true;
             resultDisplay.textContent = '';
             resultDisplay.className = '';
             
+            // Clear previous highlights from winning number parts and holes
+            document.querySelectorAll('.wn-part.highlighted').forEach(d => d.classList.remove('highlighted'));
+            document.querySelectorAll('.hole.correct, .hole.incorrect, .hole.focus').forEach(h => {
+                h.classList.remove('correct', 'incorrect', 'focus');
+            });
+             document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
+
+
             startGameLoop();
         }
 
@@ -440,17 +469,18 @@
             startButton.disabled = false;
             startButton.textContent = 'リトライ';
             
+            // Remove active state from the last column
+            const columns = stageElement.querySelectorAll('.digit-column');
+            if(columns[currentColumnIndex]) {
+                columns[currentColumnIndex].classList.remove('active');
+            }
+
             if (isClear) {
-                resultDisplay.textContent = '🎉 全桁クリア！当選！ 🎉';
+                resultDisplay.textContent = '🎉 全桁クリア！当選です！ 🎉';
                 resultDisplay.className = 'result-clear';
             } else {
-                resultDisplay.textContent = '残念！ゲームオーバー';
+                resultDisplay.textContent = '残念！ゲームオーバー...';
                 resultDisplay.className = 'result-gameover';
-                // Optionally highlight the failed digit column or ball
-                const columns = stageElement.querySelectorAll('.digit-column');
-                if(columns[currentColumnIndex]) {
-                    // columns[currentColumnIndex].style.backgroundColor = '#f8d7da'; // Example
-                }
             }
         }
 
