@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>ピコそろ - 指先で感じる計算の美学</title>
+  
+  <style>
+    /* リセット & 基本設定 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    :root {
+      --primary-bg: #0a0a0f;
+      --secondary-bg: #1a1a2e;
+      --accent-gold: #ffd700;
+      --accent-red: #ff4757;
+      --text-primary: #ffffff;
+      --text-secondary: #b8b8b8;
+      --safe-area-top: env(safe-area-inset-top);
+      --safe-area-bottom: env(safe-area-inset-bottom);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+      background: var(--primary-bg);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* スキップリンク（アクセシビリティ） */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--accent-gold);
+      color: var(--primary-bg);
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 0 0 8px 0;
+      z-index: 9999;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* ローディング画面 */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--primary-bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(255, 215, 0, 0.3);
+      border-top-color: var(--accent-gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* メインコンテナ */
+    .app-container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-top: var(--safe-area-top);
+      position: relative;
+      background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 100%);
+    }
+
+    /* ヘッダー */
+    .app-header {
+      padding: 16px 20px;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .app-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-gold), #ff6b6b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.05em;
+    }
+
+    /* 算盤セクション（上部） */
+    .abacus-section {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .abacus-container {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.3),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .abacus-frame {
+      position: relative;
+      height: 280px;
+      margin: 0 auto;
+      max-width: 360px;
+    }
+
+    .abacus-rods {
+      display: flex;
+      justify-content: space-evenly;
+      height: 100%;
+      position: relative;
+    }
+
+    .abacus-rod {
+      width: 60px;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .rod-pillar {
+      position: absolute;
+      width: 6px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(to right, #4a4a4a, #6a6a6a, #4a4a4a);
+      border-radius: 3px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .abacus-divider {
+      position: absolute;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(to bottom, #8b6914, #654321);
+      top: 30%;
+      left: 0;
+      z-index: 5;
+      border-radius: 3px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .abacus-bead {
+      position: absolute;
+      width: 50px;
+      height: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
+    }
+
+    .abacus-bead::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 30% 30%, 
+        rgba(255, 255, 255, 0.8), 
+        rgba(255, 215, 0, 0.8) 30%, 
+        rgba(184, 134, 11, 0.9) 80%);
+      box-shadow: 
+        inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+        inset 5px 5px 10px rgba(255, 255, 255, 0.3),
+        0 8px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .abacus-bead.heaven {
+      top: 15%;
+    }
+
+    .abacus-bead.heaven.active {
+      transform: translateX(-50%) translateY(60px);
+    }
+
+    .abacus-bead.earth {
+      bottom: 15%;
+    }
+
+    .abacus-bead.earth:nth-child(3) { bottom: 28%; }
+    .abacus-bead.earth:nth-child(4) { bottom: 41%; }
+    .abacus-bead.earth:nth-child(5) { bottom: 54%; }
+
+    .abacus-bead.earth.active {
+      transform: translateX(-50%) translateY(-100px);
+    }
+
+    .abacus-bead.moving {
+      animation: bead-bounce 0.5s ease;
+    }
+
+    @keyframes bead-bounce {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.1); }
+    }
+
+    .digit-label {
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* 計算結果表示 */
+    .result-display {
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 16px;
+      padding: 16px 24px;
+      margin: 20px;
+      text-align: right;
+      font-family: 'SF Mono', 'Monaco', monospace;
+      font-size: 2rem;
+      color: var(--accent-gold);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      box-shadow: 
+        inset 0 2px 8px rgba(0, 0, 0, 0.8),
+        0 1px 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-display::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, transparent, var(--accent-gold), transparent);
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s ease;
+    }
+
+    .result-display.calculating::before {
+      opacity: 0.3;
+      animation: glow-sweep 1s linear infinite;
+    }
+
+    @keyframes glow-sweep {
+      to { transform: translateX(100%); }
+    }
+
+    /* 電卓セクション（下部） */
+    .calculator-section {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 32px 32px 0 0;
+      padding: 24px 20px calc(var(--safe-area-bottom) + 20px);
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .calculator-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .calc-button {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 20px;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calc-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent, rgba(255, 255, 255, 0.1));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .calc-button:active {
+      transform: scale(0.95);
+    }
+
+    .calc-button:active::before {
+      opacity: 1;
+    }
+
+    .calc-button.operator {
+      background: rgba(255, 107, 107, 0.2);
+      color: #ff6b6b;
+    }
+
+    .calc-button.equals {
+      background: linear-gradient(135deg, var(--accent-gold), #ff6b6b);
+      grid-column: span 2;
+      color: var(--primary-bg);
+      font-weight: 700;
+    }
+
+    .calc-button.clear {
+      background: rgba(52, 152, 219, 0.2);
+      color: #3498db;
+    }
+
+    /* 振動フィードバック用クラス */
+    .vibrate {
+      animation: vibrate 0.1s linear;
+    }
+
+    @keyframes vibrate {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-1px); }
+      75% { transform: translateX(1px); }
+    }
+
+    /* パーティクル効果 */
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--accent-gold);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particle-float 1s ease-out forwards;
+    }
+
+    @keyframes particle-float {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+      }
+    }
+
+    /* チュートリアルオーバーレイ */
+    .tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .tutorial-overlay.active {
+      display: flex;
+    }
+
+    .tutorial-content {
+      background: var(--secondary-bg);
+      border-radius: 24px;
+      padding: 32px 24px;
+      max-width: 320px;
+      text-align: center;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tutorial-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-gold);
+      margin-bottom: 16px;
+    }
+
+    .tutorial-text {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .tutorial-button {
+      background: linear-gradient(135deg, var(--accent-gold), #ff6b6b);
+      color: var(--primary-bg);
+      border: none;
+      border-radius: 16px;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .tutorial-button:active {
+      transform: scale(0.95);
+    }
+
+    /* アクセシビリティ：フォーカス表示 */
+    *:focus {
+      outline: 3px solid var(--accent-gold);
+      outline-offset: 2px;
+    }
+
+    /* アクセシビリティ：高コントラストモード */
+    @media (prefers-contrast: high) {
+      :root {
+        --primary-bg: #000000;
+        --secondary-bg: #1a1a1a;
+        --text-primary: #ffffff;
+        --text-secondary: #e0e0e0;
+      }
+      
+      .calc-button {
+        border: 2px solid var(--text-primary);
+      }
+    }
+
+    /* アクセシビリティ：モーション低減 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* 横向き対応 */
+    @media (orientation: landscape) and (max-height: 500px) {
+      .app-header {
+        padding: 8px 20px;
+      }
+      
+      .app-title {
+        font-size: 1.2rem;
+      }
+      
+      .abacus-section {
+        padding: 10px;
+      }
+      
+      .abacus-frame {
+        height: 200px;
+      }
+      
+      .calculator-section {
+        padding: 16px 20px;
+      }
+      
+      .calc-button {
+        min-height: 48px;
+        font-size: 1.2rem;
+      }
+    }
+
+    /* アニメーション設定パネル */
+    .settings-panel {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 16px;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      z-index: 100;
+    }
+
+    .settings-panel.active {
+      transform: translateX(0);
+    }
+
+    .settings-button {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99;
+    }
+
+    /* PWAインストールプロンプト */
+    .install-prompt {
+      position: fixed;
+      bottom: calc(var(--safe-area-bottom) + 80px);
+      left: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 16px;
+      display: none;
+      animation: slideUp 0.3s ease;
+      z-index: 90;
+    }
+
+    .install-prompt.show {
+      display: block;
+    }
+
+    /* サウンドインジケーター */
+    .sound-indicator {
+      position: fixed;
+      top: 60px;
+      left: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99;
+    }
+
+    .sound-indicator.muted {
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <!-- スキップリンク -->
+  <a href="#calculator" class="skip-link">電卓へスキップ</a>
+
+  <!-- ローディング画面 -->
+  <div class="loading-screen" role="status" aria-label="読み込み中">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- メインアプリ -->
+  <main class="app-container" role="main">
+    <!-- ヘッダー -->
+    <header class="app-header">
+      <h1 class="app-title">そろばん電卓</h1>
+    </header>
+
+    <!-- サウンドインジケーター -->
+    <button class="sound-indicator" id="soundToggle" aria-label="サウンドのオン・オフ">
+      <span aria-hidden="true">🔊</span>
+    </button>
+
+    <!-- 設定ボタン -->
+    <button class="settings-button" id="settingsButton" aria-label="設定を開く">
+      <span aria-hidden="true">⚙️</span>
+    </button>
+
+    <!-- 設定パネル -->
+    <aside class="settings-panel" id="settingsPanel" role="complementary" aria-label="設定">
+      <h2 style="font-size: 1rem; margin-bottom: 12px;">設定</h2>
+      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <input type="checkbox" id="hapticToggle" checked>
+        <span>振動フィードバック</span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="particleToggle" checked>
+        <span>パーティクル効果</span>
+      </label>
+    </aside>
+
+    <!-- 算盤セクション -->
+    <section class="abacus-section" aria-label="算盤">
+      <div class="abacus-container">
+        <div class="abacus-frame" role="img" aria-label="5桁の算盤">
+          <div class="abacus-rods" id="abacusRods">
+            <div class="abacus-divider" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 計算結果表示 -->
+      <div class="result-display" id="display" role="status" aria-live="polite" aria-label="計算結果">
+        0
+      </div>
+    </section>
+
+    <!-- 電卓セクション -->
+    <section class="calculator-section" id="calculator" aria-label="電卓">
+      <div class="calculator-grid">
+        <button class="calc-button clear" data-action="clear" aria-label="クリア">C</button>
+        <button class="calc-button" data-action="number" data-value="7" aria-label="7">7</button>
+        <button class="calc-button" data-action="number" data-value="8" aria-label="8">8</button>
+        <button class="calc-button" data-action="number" data-value="9" aria-label="9">9</button>
+        <button class="calc-button operator" data-action="operator" data-value="÷" aria-label="割る">÷</button>
+        <button class="calc-button" data-action="number" data-value="4" aria-label="4">4</button>
+        <button class="calc-button" data-action="number" data-value="5" aria-label="5">5</button>
+        <button class="calc-button" data-action="number" data-value="6" aria-label="6">6</button>
+        <button class="calc-button operator" data-action="operator" data-value="×" aria-label="掛ける">×</button>
+        <button class="calc-button" data-action="number" data-value="1" aria-label="1">1</button>
+        <button class="calc-button" data-action="number" data-value="2" aria-label="2">2</button>
+        <button class="calc-button" data-action="number" data-value="3" aria-label="3">3</button>
+        <button class="calc-button operator" data-action="operator" data-value="-" aria-label="引く">-</button>
+        <button class="calc-button" data-action="number" data-value="0" aria-label="0">0</button>
+        <button class="calc-button operator" data-action="operator" data-value="+" aria-label="足す">+</button>
+        <button class="calc-button equals" data-action="equals" aria-label="イコール">=</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- チュートリアルオーバーレイ -->
+  <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+    <div class="tutorial-content">
+      <h2 class="tutorial-title" id="tutorialTitle">ようこそ！</h2>
+      <p class="tutorial-text">
+        電卓で計算すると、上の算盤が連動して動きます。<br>
+        珠をタップして直接動かすこともできます。
+      </p>
+      <button class="tutorial-button" id="tutorialClose">はじめる</button>
+    </div>
+  </div>
+
+  <!-- PWAインストールプロンプト -->
+  <div class="install-prompt" id="installPrompt" role="alert">
+    <p style="margin-bottom: 12px;">ホーム画面に追加して、いつでもすぐに使えるようにしましょう！</p>
+    <button class="tutorial-button" id="installButton" style="width: 100%;">インストール</button>
+  </div>
+
+  <script>
+    // グローバル変数
+    const state = {
+      displayValue: '0',
+      firstOperand: null,
+      waitingForOperand: false,
+      operator: null,
+      soundEnabled: true,
+      hapticEnabled: true,
+      particleEnabled: true
+    };
+
+    // オーディオコンテキスト（サウンド用）
+    let audioContext = null;
+
+    // DOM要素
+    const display = document.getElementById('display');
+    const abacusRods = document.getElementById('abacusRods');
+    const buttons = document.querySelectorAll('.calc-button');
+    const loadingScreen = document.querySelector('.loading-screen');
+    const tutorialOverlay = document.getElementById('tutorialOverlay');
+    const tutorialClose = document.getElementById('tutorialClose');
+    const soundToggle = document.getElementById('soundToggle');
+    const settingsButton = document.getElementById('settingsButton');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const hapticToggle = document.getElementById('hapticToggle');
+    const particleToggle = document.getElementById('particleToggle');
+    const installPrompt = document.getElementById('installPrompt');
+    const installButton = document.getElementById('installButton');
+
+    // PWA用変数
+    let deferredPrompt;
+
+    // 初期化
+    function init() {
+      initializeAbacus();
+      initializeEventListeners();
+      initializeAudio();
+      checkFirstVisit();
+      initializePWA();
+      
+      // ローディング画面を非表示
+      setTimeout(() => {
+        loadingScreen.classList.add('hidden');
+      }, 500);
+    }
+
+    // 算盤の初期化
+    function initializeAbacus() {
+      const positions = ['万', '千', '百', '十', '一'];
+      
+      for (let i = 0; i < 5; i++) {
+        const rod = document.createElement('div');
+        rod.className = 'abacus-rod';
+        rod.setAttribute('data-position', i);
+        rod.setAttribute('aria-label', `${positions[i]}の位`);
+
+        // 柱
+        const pillar = document.createElement('div');
+        pillar.className = 'rod-pillar';
+        pillar.setAttribute('aria-hidden', 'true');
+        rod.appendChild(pillar);
+
+        // 天珠（5の位）
+        const heavenBead = document.createElement('button');
+        heavenBead.className = 'abacus-bead heaven';
+        heavenBead.setAttribute('data-value', '5');
+        heavenBead.setAttribute('data-position', i);
+        heavenBead.setAttribute('role', 'button');
+        heavenBead.setAttribute('aria-label', `${positions[i]}の位の5の珠`);
+        heavenBead.setAttribute('aria-pressed', 'false');
+        heavenBead.addEventListener('click', handleBeadClick);
+        rod.appendChild(heavenBead);
+
+        // 地珠（1の位）× 4
+        for (let j = 0; j < 4; j++) {
+          const earthBead = document.createElement('button');
+          earthBead.className = 'abacus-bead earth';
+          earthBead.setAttribute('data-value', '1');
+          earthBead.setAttribute('data-position', i);
+          earthBead.setAttribute('data-index', j);
+          earthBead.setAttribute('role', 'button');
+          earthBead.setAttribute('aria-label', `${positions[i]}の位の${j + 1}番目の1の珠`);
+          earthBead.setAttribute('aria-pressed', 'false');
+          earthBead.addEventListener('click', handleBeadClick);
+          rod.appendChild(earthBead);
+        }
+
+        // 桁ラベル
+        const label = document.createElement('div');
+        label.className = 'digit-label';
+        label.textContent = positions[i];
+        label.setAttribute('aria-hidden', 'true');
+        rod.appendChild(label);
+
+        abacusRods.appendChild(rod);
+      }
+    }
+
+    // イベントリスナーの初期化
+    function initializeEventListeners() {
+      // 電卓ボタン
+      buttons.forEach(button => {
+        button.addEventListener('click', handleButtonClick);
+      });
+
+      // キーボード
+      document.addEventListener('keydown', handleKeyPress);
+
+      // チュートリアル
+      tutorialClose.addEventListener('click', closeTutorial);
+
+      // サウンドトグル
+      soundToggle.addEventListener('click', toggleSound);
+
+      // 設定
+      settingsButton.addEventListener('click', toggleSettings);
+      hapticToggle.addEventListener('change', (e) => {
+        state.hapticEnabled = e.target.checked;
+      });
+      particleToggle.addEventListener('change', (e) => {
+        state.particleEnabled = e.target.checked;
+      });
+
+      // PWAインストール
+      installButton.addEventListener('click', installPWA);
+
+      // ビューポートの高さ調整（モバイルブラウザ対応）
+      window.addEventListener('resize', () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      });
+    }
+
+    // オーディオ初期化
+    function initializeAudio() {
+      if (window.AudioContext || window.webkitAudioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    // サウンド再生
+    function playSound(frequency = 440, duration = 50) {
+      if (!state.soundEnabled || !audioContext) return;
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = frequency;
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration / 1000);
+    }
+
+    // 振動フィードバック
+    function vibrate(pattern = [10]) {
+      if (state.hapticEnabled && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    // パーティクル効果
+    function createParticle(x, y) {
+      if (!state.particleEnabled) return;
+
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      particle.style.setProperty('--tx', (Math.random() - 0.5) * 100 + 'px');
+      particle.style.setProperty('--ty', (Math.random() - 0.5) * 100 + 'px');
+      
+      document.body.appendChild(particle);
+      setTimeout(() => particle.remove(), 1000);
+    }
+
+    // ボタンクリック処理
+    function handleButtonClick(e) {
+      const button = e.currentTarget;
+      const { action, value } = button.dataset;
+      const rect = button.getBoundingClientRect();
+      
+      // エフェクト
+      vibrate();
+      playSound(action === 'number' ? 300 : 400);
+      createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+      // アクション実行
+      switch (action) {
+        case 'number':
+          inputDigit(value);
+          break;
+        case 'operator':
+          handleOperator(value);
+          break;
+        case 'equals':
+          calculate();
+          break;
+        case 'clear':
+          clear();
+          break;
+      }
+      
+      updateDisplay();
+    }
+
+    // キーボード入力処理
+    function handleKeyPress(e) {
+      if (e.key >= '0' && e.key <= '9') {
+        inputDigit(e.key);
+        updateDisplay();
+      } else if (['+', '-', '*', '/', 'Enter', '=', 'Escape', 'c', 'C'].includes(e.key)) {
+        e.preventDefault();
+        const keyMap = {
+          '+': '+',
+          '-': '-',
+          '*': '×',
+          '/': '÷',
+          'Enter': '=',
+          '=': '=',
+          'Escape': 'clear',
+          'c': 'clear',
+          'C': 'clear'
+        };
+        
+        if (keyMap[e.key] === 'clear') {
+          clear();
+        } else if (keyMap[e.key] === '=') {
+          calculate();
+        } else {
+          handleOperator(keyMap[e.key]);
+        }
+        updateDisplay();
+      }
+    }
+
+    // 数字入力
+    function inputDigit(digit) {
+      const { displayValue, waitingForOperand } = state;
+
+      if (waitingForOperand) {
+        state.displayValue = String(digit);
+        state.waitingForOperand = false;
+      } else {
+        state.displayValue = displayValue === '0' ? String(digit) : displayValue + digit;
+      }
+
+      // 最大桁数制限
+      if (state.displayValue.length > 5) {
+        state.displayValue = state.displayValue.slice(0, 5);
+      }
+    }
+
+    // 演算子処理
+    function handleOperator(nextOperator) {
+      const { firstOperand, displayValue, operator } = state;
+      const inputValue = parseFloat(displayValue);
+
+      if (firstOperand === null) {
+        state.firstOperand = inputValue;
+      } else if (operator) {
+        const result = performCalculation[operator](firstOperand, inputValue);
+        state.displayValue = String(Math.floor(result));
+        state.firstOperand = result;
+      }
+
+      state.waitingForOperand = true;
+      state.operator = nextOperator;
+    }
+
+    // 計算実行
+    function calculate() {
+      const { firstOperand, displayValue, operator } = state;
+      
+      if (firstOperand !== null && operator) {
+        const inputValue = parseFloat(displayValue);
+        const result = performCalculation[operator](firstOperand, inputValue);
+        state.displayValue = String(Math.floor(result));
+        state.firstOperand = null;
+        state.operator = null;
+        state.waitingForOperand = true;
+        
+        // 計算完了エフェクト
+        display.classList.add('calculating');
+        setTimeout(() => display.classList.remove('calculating'), 1000);
+      }
+    }
+
+    // 計算ロジック
+    const performCalculation = {
+      '÷': (a, b) => b !== 0 ? a / b : 0,
+      '×': (a, b) => a * b,
+      '+': (a, b) => a + b,
+      '-': (a, b) => a - b
+    };
+
+    // クリア
+    function clear() {
+      state.displayValue = '0';
+      state.firstOperand = null;
+      state.waitingForOperand = false;
+      state.operator = null;
+      playSound(200, 100);
+    }
+
+    // 表示更新
+    function updateDisplay() {
+      display.textContent = state.displayValue;
+      updateAbacus(parseInt(state.displayValue) || 0);
+      
+      // アクセシビリティ用の読み上げ
+      display.setAttribute('aria-label', `計算結果: ${state.displayValue}`);
+    }
+
+    // 算盤更新
+    function updateAbacus(value) {
+      // すべての珠をリセット
+      document.querySelectorAll('.abacus-bead').forEach(bead => {
+        bead.classList.remove('active', 'moving');
+        bead.setAttribute('aria-pressed', 'false');
+      });
+
+      // 数値を各桁に分解
+      const digits = Math.abs(value).toString().padStart(5, '0').split('');
+      
+      digits.forEach((digit, position) => {
+        const digitValue = parseInt(digit);
+        
+        // 5以上なら天珠を動かす
+        if (digitValue >= 5) {
+          const heavenBead = document.querySelector(
+            `.abacus-bead.heaven[data-position="${position}"]`
+          );
+          if (heavenBead) {
+            setTimeout(() => {
+              heavenBead.classList.add('active', 'moving');
+              heavenBead.setAttribute('aria-pressed', 'true');
+              playSound(600, 30);
+            }, position * 50);
+          }
+        }
+
+        // 残りの値で地珠を動かす
+        const earthValue = digitValue % 5;
+        const earthBeads = document.querySelectorAll(
+          `.abacus-bead.earth[data-position="${position}"]`
+        );
+        
+        for (let i = 0; i < earthValue; i++) {
+          if (earthBeads[i]) {
+            setTimeout(() => {
+              earthBeads[i].classList.add('active', 'moving');
+              earthBeads[i].setAttribute('aria-pressed', 'true');
+              playSound(400 + i * 50, 30);
+            }, position * 50 + (i + 1) * 30);
+          }
+        }
+      });
+    }
+
+    // 珠クリック処理
+    function handleBeadClick(e) {
+      const bead = e.currentTarget;
+      const position = parseInt(bead.dataset.position);
+      const isActive = bead.classList.contains('active');
+      
+      vibrate();
+      playSound(isActive ? 300 : 500);
+      
+      // 現在の算盤の値を計算
+      let currentValue = 0;
+      for (let i = 0; i < 5; i++) {
+        let digitValue = 0;
+        
+        const heavenBead = document.querySelector(
+          `.abacus-bead.heaven[data-position="${i}"]`
+        );
+        if (heavenBead && heavenBead.classList.contains('active')) {
+          digitValue += 5;
+        }
+        
+        const earthBeads = document.querySelectorAll(
+          `.abacus-bead.earth[data-position="${i}"]`
+        );
+        earthBeads.forEach((b, index) => {
+          if (b.classList.contains('active')) {
+            digitValue += 1;
+          }
+        });
+        
+        currentValue += digitValue * Math.pow(10, 4 - i);
+      }
+      
+      // クリックされた珠の処理
+      if (bead.classList.contains('heaven')) {
+        // 天珠の処理
+        if (isActive) {
+          bead.classList.remove('active');
+          currentValue -= 5 * Math.pow(10, 4 - position);
+        } else {
+          bead.classList.add('active');
+          currentValue += 5 * Math.pow(10, 4 - position);
+        }
+      } else {
+        // 地珠の処理
+        const index = parseInt(bead.dataset.index);
+        const samePositionBeads = document.querySelectorAll(
+          `.abacus-bead.earth[data-position="${position}"]`
+        );
+        
+        if (isActive) {
+          // この珠より上の珠もすべて非アクティブに
+          for (let i = index; i < 4; i++) {
+            if (samePositionBeads[i].classList.contains('active')) {
+              samePositionBeads[i].classList.remove('active');
+              currentValue -= Math.pow(10, 4 - position);
+            }
+          }
+        } else {
+          // この珠より下の珠もすべてアクティブに
+          for (let i = 0; i <= index; i++) {
+            if (!samePositionBeads[i].classList.contains('active')) {
+              samePositionBeads[i].classList.add('active');
+              currentValue += Math.pow(10, 4 - position);
+            }
+          }
+        }
+      }
+      
+      // 表示を更新
+      state.displayValue = String(currentValue);
+      updateDisplay();
+    }
+
+    // 初回訪問チェック
+    function checkFirstVisit() {
+      // localStorageは使えないので、セッション中のみ
+      if (!sessionStorage.getItem('visited')) {
+        setTimeout(() => {
+          tutorialOverlay.classList.add('active');
+          sessionStorage.setItem('visited', 'true');
+        }, 1000);
+      }
+    }
+
+    // チュートリアルを閉じる
+    function closeTutorial() {
+      tutorialOverlay.classList.remove('active');
+      vibrate([50, 50, 50]);
+    }
+
+    // サウンドトグル
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      soundToggle.classList.toggle('muted', !state.soundEnabled);
+      soundToggle.innerHTML = state.soundEnabled ? 
+        '<span aria-hidden="true">🔊</span>' : 
+        '<span aria-hidden="true">🔇</span>';
+      
+      if (state.soundEnabled) {
+        playSound(440, 100);
+      }
+    }
+
+    // 設定パネルトグル
+    function toggleSettings() {
+      settingsPanel.classList.toggle('active');
+      vibrate();
+    }
+
+    // PWA初期化
+    function initializePWA() {
+      // インストールプロンプトイベント
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // インストールプロンプトを表示
+        setTimeout(() => {
+          installPrompt.classList.add('show');
+        }, 30000); // 30秒後に表示
+      });
+
+      // インストール成功
+      window.addEventListener('appinstalled', () => {
+        installPrompt.classList.remove('show');
+        deferredPrompt = null;
+      });
+    }
+
+    // PWAインストール
+    async function installPWA() {
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('PWAがインストールされました');
+      }
+      
+      installPrompt.classList.remove('show');
+      deferredPrompt = null;
+    }
+
+    // Service Worker登録（PWA用）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+          // Service Workerの登録失敗を無視（開発環境用）
+        });
+      });
+    }
+
+    // 初期化実行
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
