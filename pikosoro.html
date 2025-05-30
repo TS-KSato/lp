@@ -4,49 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
   <title>ピコそろ Pro</title>
-  <!-- 正しい Base64 マニフェスト：Chrome の syntax error を解消 -->
-  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlrb3Nvcm8gUHJvIiwic2hvcnRfbmFtZSI6IlBpa29zb3JvIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwidGhlbWVfY29sb3IiOiIjMDAwMDAwIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYifQ==">
+  <!-- Manifest (Base64‑encoded JSON) → PWA installable -->
+  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlrb3Nvcm8gUHJvIiwic2hvcnRfbmFtZSI6IlBpa29zb3JvIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCIsImJhY2tncm91bmRfY29sb3IiOiIjZmZmZmZmIn0=">
   <style>
-    /* ---------------- RESET ---------------- */
+    /* -------- RESET -------- */
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.5;min-height:100vh;display:flex;flex-direction:column;background:var(--bg-primary);color:var(--text-primary)}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;line-height:1.5;min-height:100vh;background:var(--bg);color:var(--fg);display:flex;flex-direction:column}
 
-    /* -------------- THEME TOKENS -------------- */
-    :root{--light-bg-primary:#fafafa;--light-text-primary:#121212;--light-border:#e1e1e1;--dark-bg-primary:#000;--dark-text-primary:#fff;--dark-border:#2c2c2e;--accent:#1e90ff;--radius:10px}
-    @media(prefers-color-scheme:light){:root{--bg-primary:var(--light-bg-primary);--text-primary:var(--light-text-primary);--border:var(--light-border)}}
-    @media(prefers-color-scheme:dark){:root{--bg-primary:var(--dark-bg-primary);--text-primary:var(--dark-text-primary);--border:var(--dark-border)}}
-    html[data-theme="light"]{--bg-primary:var(--light-bg-primary);--text-primary:var(--light-text-primary);--border:var(--light-border)}
-    html[data-theme="dark"]{--bg-primary:var(--dark-bg-primary);--text-primary:var(--dark-text-primary);--border:var(--dark-border)}
+    /* -------- THEME TOKENS -------- */
+    :root{
+      --accent:#007aff;--radius:10px;
+      --light-bg:#fafafa;--light-fg:#121212;--light-border:#d0d0d0;
+      --dark-bg:#000000;--dark-fg:#ffffff;--dark-border:#3a3a3c;
+    }
+    @media(prefers-color-scheme:light){:root{--bg:var(--light-bg);--fg:var(--light-fg);--border:var(--light-border)}}
+    @media(prefers-color-scheme:dark){:root{--bg:var(--dark-bg);--fg:var(--dark-fg);--border:var(--dark-border)}}
+    html[data-theme="light"]{--bg:var(--light-bg);--fg:var(--light-fg);--border:var(--light-border)}
+    html[data-theme="dark"]{--bg:var(--dark-bg);--fg:var(--dark-fg);--border:var(--dark-border)}
 
-    /* -------------- LAYOUT -------------- */
+    /* -------- LAYOUT -------- */
     header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
     header h1{font-size:18px;font-weight:600}
-    .icon-btn{background:none;border:none;font-size:20px;width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--accent);cursor:pointer}
+    .icon-btn{width:36px;height:36px;font-size:20px;border:none;border-radius:var(--radius);background:none;color:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer}
     .icon-btn:active{opacity:.6}
     main{flex:1;display:flex;flex-direction:column;gap:16px;padding:0 16px 24px}
 
-    /* -------------- ABACUS -------------- */
-    .abacus{display:grid;grid-template-columns:repeat(13,1fr);gap:8px;justify-content:center;margin:auto;width:100%}
-    .rod{display:flex;flex-direction:column-reverse;gap:4px;align-items:center}
-    .bead{width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s}
-    .bead.top{margin-bottom:8px}
-    .bead.active{transform:translateY(-24px)}
-    .separator{height:2px;background:var(--border);grid-column:1/-1;margin-bottom:8px}
+    /* -------- DISPLAY -------- */
+    #valueDisplay{border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);font-size:28px;font-weight:500;text-align:right}
 
-    /* -------------- DISPLAY -------------- */
-    #valueDisplay{font-size:28px;font-weight:500;text-align:right;border:1px solid var(--border);padding:4px 8px;border-radius:var(--radius);margin-bottom:12px}
+    /* -------- ABACUS -------- */
+    .abacus{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:8px;justify-content:center;width:100%;margin:auto}
+    .rod{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .bead{width:22px;height:22px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+    .bead.top.active{transform:translateY(24px)}   /* 下へ */
+    .bead.bottom.active{transform:translateY(-24px)}/* 上へ */
+    .separator{grid-column:1/-1;height:2px;background:var(--border);margin-top:8px}
 
-    /* -------------- CALCULATOR -------------- */
-    .calculator{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
-    .calc-btn{padding:12px 0;border:none;border-radius:var(--radius);font-size:18px;font-weight:500;background:#333;color:#fff;cursor:pointer}
-    .calc-btn.op{background:#555}
+    /* -------- CALCULATOR -------- */
+    .calculator{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .calc-btn{padding:12px 0;border:none;border-radius:var(--radius);font-size:18px;font-weight:500;background:#3a3a3c;color:#fff;cursor:pointer}
+    .calc-btn.op{background:#58585a}
     .calc-btn.eq{background:var(--accent)}
 
-    /* -------------- TOAST -------------- */
-    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) scale(.9);background:var(--text-primary);color:var(--bg-primary);padding:8px 14px;border-radius:var(--radius);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+    /* -------- TOAST -------- */
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) scale(.9);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:var(--radius);opacity:0;pointer-events:none;transition:transform .25s,opacity .25s}
     .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 
-    /* -------------- ACCESSIBILITY -------------- */
+    /* -------- ACCESSIBILITY -------- */
     *:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
@@ -58,94 +62,96 @@
       <button class="icon-btn" id="infoBtn" aria-label="情報">ℹ️</button>
     </nav>
   </header>
+
   <main>
     <div id="valueDisplay" aria-live="polite">0</div>
-    <section class="abacus" id="abacus"></section>
-    <section class="calculator" id="calculator"></section>
+    <section id="abacus" class="abacus" aria-label="そろばん"></section>
+    <section id="calculator" class="calculator" aria-label="電卓"></section>
   </main>
+
   <div id="toast" class="toast" role="status" aria-live="assertive"></div>
 
   <script>
-    /* ---------------- helpers ---------------- */
+    /* ---------- helpers ---------- */
     const $=s=>document.querySelector(s);
-    function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000)}
+    const toast=msg=>{const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)};
 
-    /* ---------------- theme toggle ---------------- */
-    $("#themeBtn").addEventListener("click",()=>{
-      const root=document.documentElement;
-      const next=root.dataset.theme==="dark"?"light":root.dataset.theme==="light"?"auto":"dark";
-      if(next==="auto"){delete root.dataset.theme}else root.dataset.theme=next;
-      toast(next==="auto"?"自動":"テーマ:"+next);
+    /* ---------- theme ---------- */
+    $('#themeBtn').addEventListener('click',()=>{
+      const r=document.documentElement;
+      const next=r.dataset.theme==='dark'?'light':r.dataset.theme==='light'?'auto':'dark';
+      if(next==='auto'){delete r.dataset.theme}else r.dataset.theme=next;
+      toast(next==='auto'? '自動':`テーマ:${next}`);
     });
 
-    /* ---------------- ABACUS BUILD ---------------- */
-    const rods=13,bottom=4; // 1 top, 4 bottom beads
-    const abacus=$("#abacus");
-    const state=Array.from({length:rods},()=>({top:false,bottom:0}));
-    for(let r=0;r<rods;r++){
-      const rod=document.createElement("div");
-      rod.className="rod";
-      const topBead=document.createElement("div");
-      topBead.className="bead top";
-      rod.appendChild(topBead);
-      for(let i=0;i<bottom;i++){
-        const bead=document.createElement("div");
-        bead.className="bead bottom";
-        rod.appendChild(bead);
+    /* ---------- abacus ---------- */
+    const RODS=13, BOTTOM=4;
+    const abacusEl=$('#abacus');
+    const state=Array.from({length:RODS},()=>({top:false,bottom:0}));
+
+    // build rods
+    for(let r=0;r<RODS;r++){
+      const rod=document.createElement('div');rod.className='rod';
+      // top bead
+      const top=document.createElement('div');top.className='bead top';rod.appendChild(top);
+      // spacer (visual)
+      const spacer=document.createElement('div');spacer.style.height='8px';rod.appendChild(spacer);
+      // bottom beads
+      for(let i=0;i<BOTTOM;i++){
+        const b=document.createElement('div');b.className='bead bottom';rod.appendChild(b);
       }
-      abacus.appendChild(rod);
+      abacusEl.appendChild(rod);
     }
-    const sep=document.createElement("div");
-    sep.className="separator";
-    abacus.appendChild(sep);
+    // separator line
+    const sep=document.createElement('div');sep.className='separator';abacusEl.appendChild(sep);
 
-    function updateDisplay(){
-      const value=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(rods-idx-1),0);
-      $("#valueDisplay").textContent=value.toLocaleString("ja-JP");
-    }
+    // update display
+    const update=()=>{
+      const value=state.reduce((sum,d,idx)=>sum+((d.top?5:0)+d.bottom)*10**(RODS-idx-1),0);
+      $('#valueDisplay').textContent=value.toLocaleString('ja-JP');
+    };
 
-    abacus.addEventListener("click",e=>{
-      const bead=e.target;
-      if(!bead.classList.contains("bead"))return;
-      const rodElem=bead.parentElement;
-      const idx=[...abacus.children].filter(el=>el.classList.contains("rod")).indexOf(rodElem);
-      const data=state[idx];
-      if(bead.classList.contains("top")){
+    abacusEl.addEventListener('click',e=>{
+      const bead=e.target.closest('.bead');
+      if(!bead) return;
+      const rod=bead.parentElement;
+      const rodIndex=[...abacusEl.children].filter(el=>el.classList.contains('rod')).indexOf(rod);
+      const data=state[rodIndex];
+
+      if(bead.classList.contains('top')){
         data.top=!data.top;
-        bead.classList.toggle("active",data.top);
-      }else{
-        const beads=[...rodElem.querySelectorAll(".bead.bottom")];
-        const i=beads.indexOf(bead);
-        const target=i+1;
-        data.bottom=target;
-        beads.forEach((b,j)=>b.classList.toggle("active",j<i+1));
+        bead.classList.toggle('active',data.top);
+      }else{ // bottom beads
+        const beads=[...rod.querySelectorAll('.bead.bottom')];
+        const idx=beads.indexOf(bead); // 0‑based
+        const target=idx+1;
+        if(data.bottom===target){data.bottom=idx;}else{data.bottom=target;}
+        beads.forEach((b,i)=>b.classList.toggle('active',i<data.bottom));
       }
-      updateDisplay();
+      update();
     });
-    updateDisplay();
+    update();
 
-    /* ---------------- CALCULATOR ---------------- */
-    const keys=["7","8","9","÷","4","5","6","×","1","2","3","-","0",".","=","+"];
-    const calc=$("#calculator");
-    let expr="";
-    keys.forEach(k=>{
-      const b=document.createElement("button");
-      b.textContent=k;
-      b.className="calc-btn";
-      if("÷×-+".includes(k))b.classList.add("op");
-      if(k==="=")b.classList.add("eq");
-      b.addEventListener("click",()=>{
-        if(k==="="){
-          try{const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=result.toString();toast("= "+result);}catch{toast("式エラー");}
-        }else if(k==="C"){expr="";}
-        else expr+=k;
-        $("#valueDisplay").textContent=expr||"0";
+    /* ---------- calculator ---------- */
+    const KEYS=['C','7','8','9','÷','4','5','6','×','1','2','3','-','0','.','=','+'];
+    const calcEl=$('#calculator');
+    let expr='';
+    KEYS.forEach(k=>{
+      const btn=document.createElement('button');btn.textContent=k;btn.className='calc-btn';
+      if('÷×-++'.includes(k))btn.classList.add('op');
+      if(k==='=')btn.classList.add('eq');
+      btn.addEventListener('click',()=>{
+        if(k==='C'){expr='';$('#valueDisplay').textContent='0';return;}
+        if(k==='='){
+          try{const result=Function(`return (${expr.replace(/×/g,'*').replace(/÷/g,'/')})`)();expr=result.toString();toast(result);}catch{toast('式エラー');expr='';}
+        }else{expr+=k;}
+        $('#valueDisplay').textContent=expr||'0';
       });
-      calc.appendChild(b);
+      calcEl.appendChild(btn);
     });
 
-    /* ---------------- info ---------------- */
-    $("#infoBtn").addEventListener("click",()=>toast("ピコそろ Pro 1.0.0"));
+    /* ---------- info ---------- */
+    $('#infoBtn').addEventListener('click',()=>toast('ピコそろ Pro 1.0.1'));
   </script>
 </body>
 </html>
