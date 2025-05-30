@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ジャンボ宝くじ当選チャレンジ (横・改)</title>
+    <title>ナンバーマッチ チャレンジゲーム</title> {/* タイトル変更 */}
     <style>
         :root {
             --digit-columns: 8; /* 組2桁 + 番号6桁 */
             --numbers-per-column: 10; /* 0-9 */
             --column-width: clamp(40px, 9vw, 65px);
-            --hole-size: clamp(30px, 7vw, 45px); /* 少し大きく */
+            --hole-size: clamp(30px, 7vw, 45px);
             --hole-gap: clamp(4px, 1vw, 6px);
             --column-focus-time: 0.3s;
-            --hole-selection-speed: 75ms; /* 穴の選択アニメーション速度 */
+            --hole-selection-speed: 75ms;
             --result-feedback-time: 0.5s;
         }
 
         body {
-            font-family: 'Noto Sans JP', 'Arial', sans-serif; /* 日本語フォント優先 */
+            font-family: 'Noto Sans JP', 'Arial', sans-serif;
             margin: 0;
-            padding: 15px;
-            background-color: #f4f6f9; /* やや明るい背景 */
+            padding: 0 15px 30px 15px;
+            background-color: #f4f6f9;
             color: #333;
             display: flex;
             flex-direction: column;
@@ -38,62 +38,81 @@
             text-align: center;
             width: 100%;
             max-width: 950px;
+            margin-top: 20px;
         }
 
         h1 {
-            color: #1d4ed8; /* 濃いめの青 */
+            color: #1d4ed8;
             margin-bottom: 12px;
-            font-size: clamp(1.7em, 4.5vw, 2.4em);
+            font-size: clamp(1.6em, 4.2vw, 2.2em);
             font-weight: 700;
         }
 
         .description {
-            font-size: clamp(0.9em, 2.6vw, 1.05em);
+            font-size: clamp(0.85em, 2.5vw, 1em);
             color: #555;
             margin-bottom: 25px;
             line-height: 1.6;
         }
+        .description strong {
+            color: #1d4ed8;
+            font-size: 1.1em; /* 強調部分を少し大きく */
+        }
+        .description .challenge-phrase { /* 新設 */
+            display: block;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #d97706; /* オレンジ系で目立たせる */
+            margin-bottom: 10px;
+        }
 
-        #winning-number-info {
+
+        #target-number-info { /* ID変更: winning-number-info -> target-number-info */
             margin-bottom: 20px;
             padding: 15px;
-            background-color: #eef2ff; /* 薄い青紫系 */
+            background-color: #eef2ff;
             border-radius: 8px;
             border: 1px solid #c7d2fe;
         }
-        #winning-number-info .lottery-name {
-            font-size: clamp(0.9em, 2.8vw, 1.1em);
-            color: #4338ca; /* 紫系 */
+        #target-number-info .info-header {
+            font-size: clamp(0.75em, 2vw, 0.9em);
+            color: #4b5563;
+            margin-bottom: 10px;
+            display: block;
+            font-style: italic;
+        }
+        #target-number-info .pattern-source { /* class変更: lottery-name -> pattern-source */
+            font-size: clamp(0.85em, 2.6vw, 1.05em);
+            color: #4338ca;
             font-weight: 500;
             margin-bottom: 8px;
             display: block;
         }
-        #winning-number-info .lottery-details {
-            font-size: clamp(1.3em, 4vw, 2em);
+        #target-number-info .pattern-details { /* class変更: lottery-details -> pattern-details */
+            font-size: clamp(1.2em, 3.8vw, 1.9em);
             font-weight: 700;
-            color: #1e40af; /* やや濃い青 */
+            color: #1e40af;
             letter-spacing: 1px;
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-wrap: wrap; /* スマホでの改行考慮 */
+            flex-wrap: wrap;
         }
-        .wn-part {
+        .tn-part { /* class prefix変更: wn-part -> tn-part */
             margin: 0 0.1em;
             transition: transform 0.3s ease, color 0.3s ease;
         }
-        .wn-part.highlighted {
+        .tn-part.highlighted { /* class prefix変更 */
             transform: scale(1.15) translateY(-2px);
-            color: #059669; /* 濃い緑 (成功時) */
+            color: #059669;
             text-shadow: 0 0 5px rgba(5, 150, 105, 0.3);
         }
-        .wn-group-label, .wn-number-label {
+        .tn-group-label, .tn-number-label { /* class prefix変更 */
             font-size: 0.7em;
             font-weight: normal;
             margin: 0 0.3em;
             color: #666;
         }
-
 
         #stage-container {
             width: 100%;
@@ -101,19 +120,17 @@
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
-
         #stage {
             display: flex;
             position: relative;
             margin: 10px auto;
-            background-color: #e9ecef; /* ステージ背景 */
+            background-color: #e9ecef;
             border-radius: 10px;
             border: 1px solid #ced4da;
             padding: clamp(10px, 2vw, 15px) clamp(10px, 2vw, 20px);
             min-width: calc(var(--digit-columns) * (var(--column-width) + 5px));
             justify-content: center;
         }
-
         .digit-column {
             display: flex;
             flex-direction: column;
@@ -123,16 +140,16 @@
             width: var(--column-width);
             border-radius: 6px;
             background-color: #fff;
-            border: 2px solid transparent; /* For active state border */
+            border: 2px solid transparent;
             transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-            position: relative; /* For pseudo-elements if needed */
+            position: relative;
         }
         .digit-column.active {
-            border-color: #3b82f6; /* 目立つ青 */
+            border-color: #3b82f6;
             transform: translateY(-3px);
             box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
         }
-        .digit-column.active::before { /* Optional: Arrow indicator */
+        .digit-column.active::before {
             content: '▼';
             position: absolute;
             top: -20px;
@@ -141,14 +158,12 @@
             color: #3b82f6;
             font-size: 14px;
         }
-
-
         .hole {
             width: var(--hole-size);
             height: var(--hole-size);
             background-color: #f8f9fa;
             border: 1px solid #d1d9e0;
-            border-radius: 8px; /* 四角丸 */
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -161,29 +176,27 @@
             user-select: none;
         }
         .hole:last-child { margin-bottom: 0; }
-
-        .hole.focus { /* 選択中の穴のスタイル */
+        .hole.focus {
             transform: scale(1.1);
-            border-color: #60a5fa; /* 明るい青 */
+            border-color: #60a5fa;
             background-color: #eff6ff;
             box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
             color: #1d4ed8;
         }
-        .hole.correct { /* 正解の穴のスタイル */
-            background-color: #d1fae5 !important; /* 濃い緑の薄い版 */
-            border-color: #10b981 !important; /* エメラルドグリーン */
+        .hole.correct {
+            background-color: #d1fae5 !important;
+            border-color: #10b981 !important;
             color: #047857;
             transform: scale(1.15) !important;
             box-shadow: 0 0 12px rgba(16, 185, 129, 0.6) !important;
         }
-        .hole.incorrect { /* 不正解の穴のスタイル */
-            background-color: #fee2e2 !important; /* 濃い赤の薄い版 */
-            border-color: #f87171 !important; /* 明るい赤 */
+        .hole.incorrect {
+            background-color: #fee2e2 !important;
+            border-color: #f87171 !important;
             color: #b91c1c;
             transform: scale(1.05) !important;
             box-shadow: 0 0 12px rgba(248, 113, 113, 0.6) !important;
         }
-
 
         #start-button {
             background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
@@ -194,7 +207,7 @@
             font-weight: 600;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic transition */
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             margin-top: 25px;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
             letter-spacing: 0.5px;
@@ -208,12 +221,11 @@
             box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
         }
         #start-button:disabled {
-            background: #d1d5db; /* グレー */
+            background: #d1d5db;
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
         }
-
         #result-display {
             font-size: clamp(1.5em, 4.2vw, 2em);
             font-weight: 700;
@@ -233,23 +245,66 @@
             25% { transform: translateX(-6px); }
             75% { transform: translateX(6px); }
         }
+
+        .notes-section {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+            font-size: clamp(0.75em, 2.2vw, 0.9em);
+            color: #4b5563;
+            max-width: 950px;
+            width: 100%;
+        }
+        .notes-section h3 {
+            font-size: clamp(1em, 2.8vw, 1.2em);
+            color: #1f2937;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #d1d5db;
+            padding-bottom: 8px;
+        }
+        .notes-section ul {
+            list-style-type: disc;
+            padding-left: 20px;
+            margin: 0;
+        }
+        .notes-section li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .notes-section a { /* リンクが必要な場合 */
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+        .notes-section a:hover {
+            color: #1e40af;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>ジャンボ宝くじ当選チャレンジ</h1>
-        <p class="description">スタートボタンで運命の抽選開始！<br>表示された当選番号の各桁が、スロットの数字と一致するか挑戦しよう！</p>
+        <h1>ナンバーマッチ チャレンジゲーム</h1>
+        <p class="description">
+            <span class="challenge-phrase">超低確率に挑戦！全ての数字を当てよう！</span>
+            スタートボタンで運命の数字合わせシミュレーション開始！<br>
+            各スロットでターゲットナンバーと同じ数字が出るか挑戦しよう！<br>
+            (このゲームでは、ターゲットナンバーの参考パターンとして<strong>過去のくじ当選番号データ</strong>を使用しています)
+        </p> 
 
-        <div id="winning-number-info">
-            <span class="lottery-name">取得中...</span>
-            <div class="lottery-details">
-                <!-- JSで生成: 例: <span class="wn-part">5</span><span class="wn-part">8</span><span class="wn-group-label">組</span> ... -->
+        <div id="target-number-info"> 
+            <span class="info-header">【ターゲットナンバーの参考パターン】</span> 
+            <span class="pattern-source">取得中...</span> 
+            <div class="pattern-details">
+                {/* JSで生成 */}
             </div>
         </div>
 
         <div id="stage-container">
             <div id="stage">
-                <!-- Digit columns and holes will be generated by JavaScript -->
+                {/* JSで生成 */}
             </div>
         </div>
 
@@ -257,73 +312,78 @@
         <div id="result-display"></div>
     </div>
 
+    <div class="notes-section">
+        <h3>ご利用にあたっての注意事項</h3>
+        <ul>
+            <li>本ゲームは、エンターテイメントを目的とした数字合わせのシミュレーションゲームです。ゲーム内で使用される数字のパターンは、過去に発行されたくじの当選番号データを参考にしています。</li>
+            <li>本ゲームの結果は、いかなる実際のくじ等の当選を保証したり、示唆したりするものでは一切ありません。</li>
+            <li>ゲーム内で表示される数字のパターンやその出典に関する情報は、あくまで参考として提示されるものであり、必ずしも最新または正確な情報を反映しているわけではありません。</li>
+            <li>本ゲームは、特定のくじ等の発行・運営団体とは一切関係ありません。また、特定のくじ等の購入を推奨するものではありません。</li>
+            <li>本ゲームの利用により生じたいかなる種類の損害についても、本ゲームの開発者および提供者は一切の責任を負いかねます。自己の責任においてお楽しみください。</li>
+        </ul>
+    </div>
+
     <script>
-        const winningNumbersData = [
-            { kai: '第1041回', name: 'バレンタインジャンボ宝くじ', group: '89', number: '191060' },
-            { kai: '第1024回', name: 'ハロウィンジャンボ宝くじ', group: '24', number: '111980' },
-            { kai: '第1013回', name: 'サマージャンボ宝くじ', group: '11', number: '110955' },
-            { kai: '第1003回', name: 'ドリームジャンボ宝くじ', group: '58', number: '154049' },
-            { kai: '第1003回', name: 'ドリームジャンボ宝くじ', group: '58', number: '154049' },
-            { kai: '第633回', name: '年末ジャンボ宝くじ', group: '61', number: '195280' },
-            { kai: '第596回', name: '年末ジャンボ宝くじ', group: '84', number: '142297' },
-            { kai: '第573回', name: '年末ジャンボ宝くじ', group: '32', number: '138339' },
-            { kai: '第550回', name: '年末ジャンボ宝くじ', group: '13', number: '191717' },
-            { kai: '第827回', name: 'ジャンボ宝くじ第1弾', group: '06', number: '142007' },
+        const numberPatternsData = [ // 変数名変更: winningNumbersData -> numberPatternsData
+            { sourceInfo: '第1003回 全国自治宝くじ（ドリームジャンボ宝くじ）参考', group: '58', number: '154049' }, // sourceInfoに変更
+            { sourceInfo: '第993回 全国自治宝くじ（年末ジャンボ宝くじ）参考', group: '12', number: '345678' },
+            { sourceInfo: '第979回 全国自治宝くじ（サマージャンボ宝くじ）参考', group: '77', number: '777777' },
+            { sourceInfo: '第1000回 全国自治宝くじ（年末ジャンボミニ）参考', group: '01', number: '234567' },
+            { sourceInfo: '第985回 全国自治宝くじ（ハロウィンジャンボ宝くじ）参考', group: '98', number: '765432' },
         ];
         const NUM_DIGIT_COLUMNS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--digit-columns'));
 
-        let currentWinningData = {};
-        let currentWinningDigits = [];    // e.g., ['5', '8', '1', '5', '4', '0', '4', '9']
+        let currentTargetPatternData = {}; // 変数名変更
+        let currentTargetDigits = [];    // 変数名変更
         let gameInProgress = false;
         let currentColumnIndex = 0;
 
-        const lotteryNameDisplay = document.querySelector('#winning-number-info .lottery-name');
-        const lotteryDetailsDisplay = document.querySelector('#winning-number-info .lottery-details');
+        const patternSourceDisplay = document.querySelector('#target-number-info .pattern-source'); // セレクタ・変数名変更
+        const patternDetailsDisplay = document.querySelector('#target-number-info .pattern-details'); // セレクタ・変数名変更
         const stageElement = document.getElementById('stage');
         const startButton = document.getElementById('start-button');
         const resultDisplay = document.getElementById('result-display');
         const stageContainer = document.getElementById('stage-container');
 
-        function selectWinningNumber() {
-            const randomIndex = Math.floor(Math.random() * winningNumbersData.length);
-            currentWinningData = winningNumbersData[randomIndex];
+        function selectTargetPattern() { // 関数名変更
+            const randomIndex = Math.floor(Math.random() * numberPatternsData.length);
+            currentTargetPatternData = numberPatternsData[randomIndex];
             
-            lotteryNameDisplay.textContent = `${currentWinningData.kai} ${currentWinningData.name}`;
+            patternSourceDisplay.textContent = currentTargetPatternData.sourceInfo;
             
-            lotteryDetailsDisplay.innerHTML = ''; // Clear previous
-            const groupDigits = currentWinningData.group.split('');
-            const numberDigits = currentWinningData.number.split('');
+            patternDetailsDisplay.innerHTML = ''; 
+            const groupDigits = currentTargetPatternData.group.split('');
+            const numberDigits = currentTargetPatternData.number.split('');
 
             groupDigits.forEach(digit => {
                 const span = document.createElement('span');
-                span.classList.add('wn-part');
+                span.classList.add('tn-part'); // class prefix変更
                 span.textContent = digit;
-                lotteryDetailsDisplay.appendChild(span);
+                patternDetailsDisplay.appendChild(span);
             });
             
             const groupLabel = document.createElement('span');
-            groupLabel.classList.add('wn-group-label');
-            groupLabel.textContent = '組';
-            lotteryDetailsDisplay.appendChild(groupLabel);
+            groupLabel.classList.add('tn-group-label'); // class prefix変更
+            groupLabel.textContent = '前半'; // 「組」から変更
+            patternDetailsDisplay.appendChild(groupLabel);
 
-            // Add a non-breaking space for better visual separation if needed on small screens
             const spacer = document.createElement('span');
             spacer.innerHTML = ' '; 
-            lotteryDetailsDisplay.appendChild(spacer);
+            patternDetailsDisplay.appendChild(spacer);
 
             numberDigits.forEach(digit => {
                 const span = document.createElement('span');
-                span.classList.add('wn-part');
+                span.classList.add('tn-part'); // class prefix変更
                 span.textContent = digit;
-                lotteryDetailsDisplay.appendChild(span);
+                patternDetailsDisplay.appendChild(span);
             });
 
             const numberLabel = document.createElement('span');
-            numberLabel.classList.add('wn-number-label');
-            numberLabel.textContent = '番';
-            lotteryDetailsDisplay.appendChild(numberLabel);
+            numberLabel.classList.add('tn-number-label'); // class prefix変更
+            numberLabel.textContent = '後半'; // 「番」から変更
+            patternDetailsDisplay.appendChild(numberLabel);
 
-            currentWinningDigits = [...groupDigits, ...numberDigits];
+            currentTargetDigits = [...groupDigits, ...numberDigits];
         }
 
         function createStage() {
@@ -347,7 +407,7 @@
         
         function initializeGame() {
             gameInProgress = false;
-            selectWinningNumber();
+            selectTargetPattern(); // 関数呼び出し変更
             createStage();
             
             resultDisplay.textContent = '';
@@ -357,7 +417,7 @@
             currentColumnIndex = 0;
 
             document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
-            document.querySelectorAll('.wn-part.highlighted').forEach(d => d.classList.remove('highlighted'));
+            document.querySelectorAll('.tn-part.highlighted').forEach(d => d.classList.remove('highlighted')); // class prefix変更
             document.querySelectorAll('.hole.correct, .hole.incorrect, .hole.focus').forEach(h => {
                 h.classList.remove('correct', 'incorrect', 'focus');
             });
@@ -374,7 +434,6 @@
                 const targetColumn = columns[columnIndex];
                 targetColumn.classList.add('active');
 
-                // Scroll stage if needed
                 const targetScrollLeft = targetColumn.offsetLeft - stageContainer.offsetWidth / 2 + targetColumn.offsetWidth / 2;
                 stageContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
@@ -386,16 +445,16 @@
             return new Promise(resolve => {
                 const column = stageElement.querySelectorAll('.digit-column')[columnIndex];
                 const holes = Array.from(column.querySelectorAll('.hole'));
-                const correctDigit = currentWinningDigits[columnIndex];
+                const correctDigit = currentTargetDigits[columnIndex]; // 変数名変更
                 
                 let focusCount = 0;
-                const minSpins = 15; // Minimum "roulette" effect
+                const minSpins = 15; 
                 const randomSpins = Math.floor(Math.random() * 10);
                 const maxFocusCount = minSpins + randomSpins;
 
                 holes.forEach(h => h.classList.remove('focus', 'correct', 'incorrect'));
 
-                let currentFocusIndex = Math.floor(Math.random() * 10); // Start focus randomly
+                let currentFocusIndex = Math.floor(Math.random() * 10);
 
                 const intervalId = setInterval(() => {
                     holes.forEach(h => h.classList.remove('focus'));
@@ -404,25 +463,23 @@
                     focusCount++;
                     if (focusCount >= maxFocusCount) {
                         clearInterval(intervalId);
-                        // Final "selection" - this is where the luck/gameplay happens
-                        // For this game, we'll make it truly random for the player.
                         const selectedHoleIndex = Math.floor(Math.random() * 10);
                         const selectedHole = holes[selectedHoleIndex];
                         
-                        holes.forEach(h => h.classList.remove('focus')); // Clear all focus
-                        selectedHole.classList.add('focus'); // Highlight the "selected" one briefly
+                        holes.forEach(h => h.classList.remove('focus')); 
+                        selectedHole.classList.add('focus'); 
 
                         setTimeout(() => {
                             const isCorrect = (selectedHole.dataset.value === correctDigit);
-                            selectedHole.classList.remove('focus'); // Remove general focus before applying result style
+                            selectedHole.classList.remove('focus'); 
                             selectedHole.classList.add(isCorrect ? 'correct' : 'incorrect');
                             
                             if(isCorrect) {
-                                const wnParts = lotteryDetailsDisplay.querySelectorAll('.wn-part');
-                                if(wnParts[columnIndex]) wnParts[columnIndex].classList.add('highlighted');
+                                const tnParts = patternDetailsDisplay.querySelectorAll('.tn-part'); // class prefix変更
+                                if(tnParts[columnIndex]) tnParts[columnIndex].classList.add('highlighted');
                             }
                             resolve(isCorrect);
-                        }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--result-feedback-time').replace('s','')) * 500); // Time to show result color
+                        }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--result-feedback-time').replace('s','')) * 500); 
                     } else {
                         currentFocusIndex = (currentFocusIndex + 1) % 10;
                     }
@@ -440,10 +497,9 @@
                     endGame(false);
                     return;
                 }
-                // Add a slight delay for pacing after correct selection
                 await new Promise(r => setTimeout(r, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--result-feedback-time').replace('s','')) * 1000 * 0.6));
             }
-            endGame(true); // All columns passed
+            endGame(true); 
         }
 
         function startGame() {
@@ -458,13 +514,11 @@
             resultDisplay.textContent = '';
             resultDisplay.className = '';
             
-            // Clear previous highlights from winning number parts and holes
-            document.querySelectorAll('.wn-part.highlighted').forEach(d => d.classList.remove('highlighted'));
+            document.querySelectorAll('.tn-part.highlighted').forEach(d => d.classList.remove('highlighted')); // class prefix変更
             document.querySelectorAll('.hole.correct, .hole.incorrect, .hole.focus').forEach(h => {
                 h.classList.remove('correct', 'incorrect', 'focus');
             });
-             document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
-
+            document.querySelectorAll('.digit-column.active').forEach(col => col.classList.remove('active'));
 
             startGameLoop();
         }
@@ -474,25 +528,21 @@
             startButton.disabled = false;
             startButton.textContent = 'リトライ';
             
-            // Remove active state from the last column
             const columns = stageElement.querySelectorAll('.digit-column');
             if(columns[currentColumnIndex]) {
                 columns[currentColumnIndex].classList.remove('active');
             }
 
             if (isClear) {
-                resultDisplay.textContent = '🎉 全桁クリア！当選です！ 🎉';
+                resultDisplay.textContent = '🎉 パーフェクト！全数字マッチ！ 🎉'; // 文言調整
                 resultDisplay.className = 'result-clear';
             } else {
-                resultDisplay.textContent = '残念！ゲームオーバー...';
+                resultDisplay.textContent = '残念！チャレンジ失敗...'; 
                 resultDisplay.className = 'result-gameover';
             }
         }
 
-        // Event Listeners
         startButton.addEventListener('click', startGame);
-
-        // Initial Setup
         document.addEventListener('DOMContentLoaded', initializeGame);
     </script>
 </body>
